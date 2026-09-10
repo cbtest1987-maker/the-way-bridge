@@ -1,0 +1,45 @@
+{
+  "name": "Need",
+  "type": "object",
+  "properties": {
+    "request_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "prayer",
+        "transportation",
+        "food",
+        "church_connection",
+        "resources",
+        "building",
+        "church_planting",
+        "fundraising",
+        "disaster"
+      ]
+    },
+    "details": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "offered",
+        "accepted",
+        "consented",
+        "completed",
+        "declined"
+      ],
+      "default": "pending"
+    },
+    "church_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "request_id",
+    "type"
+  ]
+}

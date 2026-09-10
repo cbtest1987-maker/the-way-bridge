@@ -1,0 +1,41 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user"
+      ],
+      "default": "user",
+      "description": "Platform role. admin = Platform Administrator."
+    },
+    "app_role": {
+      "type": "string",
+      "enum": [
+        "requester",
+        "prayer_team",
+        "volunteer",
+        "church_admin",
+        "compliance_reviewer"
+      ],
+      "default": "requester",
+      "description": "The person's role within theWay Bridge AI."
+    },
+    "church_id": {
+      "type": "string",
+      "description": "Church this user is affiliated with (for prayer_team, volunteer, church_admin roles)."
+    },
+    "volunteer_status": {
+      "type": "string",
+      "enum": [
+        "none",
+        "pending",
+        "approved"
+      ],
+      "default": "none",
+      "description": "Approval status when app_role is volunteer."
+    }
+  }
+}

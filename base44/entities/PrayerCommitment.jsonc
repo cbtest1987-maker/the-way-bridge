@@ -1,0 +1,19 @@
+{
+  "name": "PrayerCommitment",
+  "type": "object",
+  "properties": {
+    "request_id": {
+      "type": "string"
+    },
+    "need_id": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string",
+      "description": "Optional encouragement or scripture"
+    }
+  },
+  "required": [
+    "request_id"
+  ]
+}

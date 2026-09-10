@@ -1,0 +1,57 @@
+{
+  "name": "PrayerRequest",
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "is_anonymous": {
+      "type": "boolean",
+      "default": false
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "contact_email": {
+      "type": "string"
+    },
+    "contact_phone": {
+      "type": "string"
+    },
+    "location_text": {
+      "type": "string"
+    },
+    "safety_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "safe",
+        "sensitive",
+        "flagged",
+        "danger"
+      ],
+      "default": "pending"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "submitted",
+        "screening",
+        "matched",
+        "connected",
+        "answered",
+        "closed"
+      ],
+      "default": "submitted"
+    },
+    "matched_church_id": {
+      "type": "string"
+    },
+    "ai_summary": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "message"
+  ]
+}

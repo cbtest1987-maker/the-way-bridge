@@ -1,0 +1,82 @@
+{
+  "name": "Church",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string",
+      "description": "City / region"
+    },
+    "website": {
+      "type": "string"
+    },
+    "denomination": {
+      "type": "string"
+    },
+    "statement_of_faith": {
+      "type": "string"
+    },
+    "leader_name": {
+      "type": "string"
+    },
+    "leader_email": {
+      "type": "string"
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ministries": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "supports_students": {
+      "type": "boolean",
+      "default": false
+    },
+    "supports_transportation": {
+      "type": "boolean",
+      "default": false
+    },
+    "supports_food": {
+      "type": "boolean",
+      "default": false
+    },
+    "supports_church_planting": {
+      "type": "boolean",
+      "default": false
+    },
+    "supports_resource_sharing": {
+      "type": "boolean",
+      "default": false
+    },
+    "supports_disaster_response": {
+      "type": "boolean",
+      "default": false
+    },
+    "safeguarding_contact": {
+      "type": "string"
+    },
+    "verification_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "verified",
+        "rejected"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "name",
+    "location",
+    "leader_name",
+    "leader_email"
+  ]
+}

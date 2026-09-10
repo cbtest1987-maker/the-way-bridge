@@ -1,0 +1,27 @@
+{
+  "name": "ComplianceCase",
+  "type": "object",
+  "properties": {
+    "request_id": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "resolved"
+      ],
+      "default": "open"
+    },
+    "reviewer_notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "request_id",
+    "reason"
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "name": "SupportOffer",
+  "type": "object",
+  "properties": {
+    "need_id": {
+      "type": "string"
+    },
+    "request_id": {
+      "type": "string"
+    },
+    "volunteer_message": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "offered",
+        "requester_review",
+        "approved",
+        "declined"
+      ],
+      "default": "offered"
+    }
+  },
+  "required": [
+    "need_id",
+    "request_id"
+  ]
+}
