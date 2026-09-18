@@ -27,21 +27,24 @@ export default function GetInvolved() {
     setSaving(false);
   };
 
-  if (user?.app_role === "prayer_team" || user?.app_role === "volunteer") {
-    return (
-      <div className="max-w-lg mx-auto px-6 py-16 text-center">
-        <p className="text-[#2B2620] font-medium mb-2">You're already serving as a {user.app_role.replace("_", " ")}.</p>
-        {user.app_role === "volunteer" && user.volunteer_status === "pending" && (
-          <p className="text-sm text-[#8A8375]">Your church admin still needs to approve you before you see support invitations.</p>
-        )}
-      </div>
-    );
-  }
+  const hasChurch = !!user?.church_id;
 
   return (
     <div className="max-w-lg mx-auto px-6 py-10">
       <h1 className="font-serif text-2xl text-[#2B2620] mb-1">Get Involved</h1>
       <p className="text-sm text-[#8A8375] mb-6">Choose a verified church and how you'd like to serve.</p>
+
+      {hasChurch && (
+        <div className="bg-[#EAF2EE] border border-[#BFD9CD] rounded-2xl p-4 mb-5 text-sm text-[#2B2620]">
+          <p className="font-medium">You're serving as a {user.app_role.replace("_", " ")}.</p>
+          {user.app_role === "volunteer" && user.volunteer_status === "pending" && (
+            <p className="text-xs text-[#5B5648] mt-1">Your church admin still needs to approve you before you see support invitations.</p>
+          )}
+          {user.app_role === "prayer_team" && (
+            <p className="text-xs text-[#5B5648] mt-1"><Link to="/prayer-team" className="underline">Go to the Prayer Queue →</Link></p>
+          )}
+        </div>
+      )}
 
       <div className="bg-white rounded-3xl border border-[#EFE8DA] p-6 space-y-5">
         <div>
