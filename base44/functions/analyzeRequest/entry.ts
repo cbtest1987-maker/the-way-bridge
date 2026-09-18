@@ -6,15 +6,19 @@ export default async function(req) {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { message } = await req.json();
+    const { message, follow_up_answers } = await req.json();
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
     }
     const trimmed = message.trim().slice(0, 2000);
 
+    const followUpContext = follow_up_answers && Array.isArray(follow_up_answers) && follow_up_answers.length > 0
+      ? `\n\nThe person also answered these follow-up questions:\n${follow_up_answers.map((a, i) => `Q${i + 1}: ${a.question}\nA: ${a.answer}`).join('\n')}\nIncorporate these answers into your analysis.`
+      : '';
+
     const prompt = `You are the Safety and Need Decomposition AI for a Christian prayer and care platform called theWay Bridge AI.
 A person submitted this request:
-"""${trimmed}"""
+"""${trimmed}"""${followUpContext}
 
 Step 1 — Safety screening. Classify safety_status as one of:
 - "safe": an ordinary prayer or care request.

@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, AlertTriangle } from "lucide-react";
+import { Loader2, Sparkles, AlertTriangle, MessageCircle } from "lucide-react";
 import NeedBadge from "@/components/request/NeedBadge";
 import ChurchMatchCard from "@/components/request/ChurchMatchCard";
 import PrivacyNote from "@/components/shared/PrivacyNote";
@@ -15,6 +16,9 @@ export default function SubmitRequest() {
   const [step, setStep] = useState(1);
   const [message, setMessage] = useState("");
   const [anonymous, setAnonymous] = useState(false);
+  const [followUpQuestions, setFollowUpQuestions] = useState([]);
+  const [followUpAnswers, setFollowUpAnswers] = useState([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [churches, setChurches] = useState([]);
@@ -30,10 +34,32 @@ export default function SubmitRequest() {
     }
   }, []);
 
-  const runAnalysis = async () => {
-    setAnalyzing(true);
+  const loadFollowUpQuestions = async () => {
     setStep(2);
-    const res = await base44.functions.invoke("analyzeRequest", { message });
+    setLoadingQuestions(true);
+    try {
+      const res = await base44.functions.invoke("requestFollowUp", { message });
+      const questions = res.data.questions || [];
+      setFollowUpQuestions(questions);
+      setFollowUpAnswers(questions.map(() => ""));
+      if (questions.length === 0) {
+        // No follow-up questions needed — go straight to analysis
+        runAnalysis([]);
+      }
+    } catch {
+      setFollowUpQuestions([]);
+      runAnalysis([]);
+    }
+    setLoadingQuestions(false);
+  };
+
+  const runAnalysis = async (answers) => {
+    setAnalyzing(true);
+    setStep(3);
+    const formattedAnswers = answers
+      .map((answer, i) => answer.trim() ? { question: followUpQuestions[i], answer: answer.trim() } : null)
+      .filter(Boolean);
+    const res = await base44.functions.invoke("analyzeRequest", { message, follow_up_answers: formattedAnswers });
     setAnalysis(res.data);
     if (res.data.safety_status === "safe" || res.data.safety_status === "sensitive") {
       const list = await base44.entities.Church.filter({ verification_status: "verified" });
@@ -86,6 +112,7 @@ export default function SubmitRequest() {
 
   return (
     <div className="max-w-xl mx-auto px-6 py-10">
+      {/* Step 1: Message entry */}
       {step === 1 && (
         <div className="bg-white rounded-3xl border border-[#EFE8DA] p-6">
           <h1 className="font-serif text-2xl text-[#2B2620] mb-1">Share Your Prayer Request</h1>
@@ -102,7 +129,7 @@ export default function SubmitRequest() {
           </div>
           <PrivacyNote>You control what is shared — we only share the information needed to connect you with the right people.</PrivacyNote>
           <Button
-            onClick={runAnalysis}
+            onClick={loadFollowUpQuestions}
             disabled={!message.trim()}
             className="w-full mt-5 rounded-full bg-[#3D6E64] hover:bg-[#2F5850] text-white"
           >
@@ -111,7 +138,59 @@ export default function SubmitRequest() {
         </div>
       )}
 
+      {/* Step 2: AI follow-up questions */}
       {step === 2 && (
+        <div className="bg-white rounded-3xl border border-[#EFE8DA] p-6">
+          {loadingQuestions ? (
+            <div className="flex flex-col items-center py-12 text-center">
+              <Loader2 className="w-8 h-8 text-[#3D6E64] animate-spin mb-4" />
+              <p className="font-serif text-lg text-[#2B2620]">Our AI Care Agent is listening...</p>
+              <p className="text-sm text-[#8A8375] mt-1">Thinking about how to best support you.</p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 mb-4">
+                <MessageCircle className="w-4 h-4 text-[#3D6E64]" />
+                <h2 className="font-serif text-xl text-[#2B2620]">A few quick questions</h2>
+              </div>
+              <p className="text-sm text-[#8A8375] mb-4">
+                These help us understand your needs and connect you to the right support. All questions are optional.
+              </p>
+              <div className="space-y-4">
+                {followUpQuestions.map((q, i) => (
+                  <div key={i}>
+                    <label className="text-sm font-medium text-[#2B2620] mb-1.5 block">{q}</label>
+                    <Textarea
+                      value={followUpAnswers[i] || ""}
+                      onChange={(e) => {
+                        const updated = [...followUpAnswers];
+                        updated[i] = e.target.value;
+                        setFollowUpAnswers(updated);
+                      }}
+                      className="min-h-[70px] resize-none"
+                      maxLength={500}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-3 mt-5">
+                <Button variant="outline" className="flex-1 rounded-full" onClick={() => runAnalysis([])}>
+                  Skip
+                </Button>
+                <Button
+                  onClick={() => runAnalysis(followUpAnswers)}
+                  className="flex-1 rounded-full bg-[#3D6E64] hover:bg-[#2F5850] text-white"
+                >
+                  Continue
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Step 3: Analysis results */}
+      {step === 3 && (
         <div className="bg-white rounded-3xl border border-[#EFE8DA] p-6">
           {analyzing ? (
             <div className="flex flex-col items-center py-12 text-center">
@@ -155,7 +234,7 @@ export default function SubmitRequest() {
               <PrivacyNote>We only share the information needed to connect you with the right people.</PrivacyNote>
 
               <Button
-                onClick={() => (isCrisis || isBlocked ? finalize() : setStep(churchNeeded ? 3 : 4))}
+                onClick={() => (isCrisis || isBlocked ? finalize() : setStep(churchNeeded ? 4 : 5))}
                 disabled={submitting}
                 className="w-full mt-5 rounded-full bg-[#3D6E64] hover:bg-[#2F5850] text-white"
               >
@@ -166,7 +245,8 @@ export default function SubmitRequest() {
         </div>
       )}
 
-      {step === 3 && (
+      {/* Step 4: Church matching */}
+      {step === 4 && (
         <div className="bg-white rounded-3xl border border-[#EFE8DA] p-6">
           <h2 className="font-serif text-xl text-[#2B2620] mb-1">Churches Near You</h2>
           <p className="text-sm text-[#8A8375] mb-4">We found verified churches that match your needs.</p>
@@ -185,17 +265,18 @@ export default function SubmitRequest() {
             )}
           </div>
           <div className="flex gap-3 mt-5">
-            <Button variant="outline" className="flex-1 rounded-full" onClick={() => setStep(4)}>
+            <Button variant="outline" className="flex-1 rounded-full" onClick={() => setStep(5)}>
               Skip for now
             </Button>
-            <Button onClick={() => setStep(4)} className="flex-1 rounded-full bg-[#3D6E64] hover:bg-[#2F5850] text-white">
+            <Button onClick={() => setStep(5)} className="flex-1 rounded-full bg-[#3D6E64] hover:bg-[#2F5850] text-white">
               Continue
             </Button>
           </div>
         </div>
       )}
 
-      {step === 4 && (
+      {/* Step 5: Confirm */}
+      {step === 5 && (
         <div className="bg-white rounded-3xl border border-[#EFE8DA] p-6 text-center">
           <h2 className="font-serif text-xl text-[#2B2620] mb-2">Ready to send this to prayer</h2>
           <p className="text-sm text-[#8A8375] mb-6">Your request will be prayed for and, where relevant, gently routed to caring hands.</p>

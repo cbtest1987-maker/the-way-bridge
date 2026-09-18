@@ -46,6 +46,13 @@ export default function GetInvolved() {
         </div>
       )}
 
+      {!hasChurch && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-5 text-sm text-[#5B5648]">
+          <p className="font-medium text-[#2B2620] mb-1">Prayer warriors must belong to a registered church.</p>
+          <p className="text-xs">If your church isn't listed below, please ask your church leader to <Link to="/register-church" className="underline font-medium">register your church</Link> first. Once verified, you can join their prayer team.</p>
+        </div>
+      )}
+
       <div className="bg-white rounded-3xl border border-[#EFE8DA] p-6 space-y-5">
         <div>
           <label className="text-xs font-medium text-[#8A8375] mb-1 block">Choose a church</label>

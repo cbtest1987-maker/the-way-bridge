@@ -22,6 +22,8 @@ import PrayerTeamQueue from '@/pages/PrayerTeamQueue';
 import VolunteerQueue from '@/pages/VolunteerQueue';
 import ComplianceQueue from '@/pages/ComplianceQueue';
 import AdminVerification from '@/pages/AdminVerification';
+import PrayerWarriorAvailability from '@/pages/PrayerWarriorAvailability';
+import SchedulingAssistant from '@/pages/SchedulingAssistant';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -66,6 +68,8 @@ const AuthenticatedApp = () => {
           <Route path="/volunteer" element={<VolunteerQueue />} />
           <Route path="/compliance" element={<ComplianceQueue />} />
           <Route path="/admin/verification" element={<AdminVerification />} />
+          <Route path="/availability" element={<PrayerWarriorAvailability />} />
+          <Route path="/schedule" element={<SchedulingAssistant />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

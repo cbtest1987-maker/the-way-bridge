@@ -1,0 +1,41 @@
+{
+  "name": "Availability",
+  "type": "object",
+  "properties": {
+    "church_id": {
+      "type": "string",
+      "description": "The church the prayer warrior belongs to"
+    },
+    "day_of_week": {
+      "type": "string",
+      "enum": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+      ]
+    },
+    "start_time": {
+      "type": "string",
+      "description": "Start time in HH:MM format (24h)"
+    },
+    "end_time": {
+      "type": "string",
+      "description": "End time in HH:MM format (24h)"
+    },
+    "timezone": {
+      "type": "string",
+      "default": "America/Chicago",
+      "description": "IANA timezone identifier"
+    }
+  },
+  "required": [
+    "church_id",
+    "day_of_week",
+    "start_time",
+    "end_time"
+  ]
+}

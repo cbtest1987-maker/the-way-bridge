@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { HandHeart, HeartHandshake, Church, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const HERO_IMG = "https://media.base44.com/images/public/6aa22be9a709fe9e7a17a711/93fb0f247_generated_image.png";
 
@@ -65,29 +66,57 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
-            <QuickAction icon={HandHeart} label="Ask for Prayer" onClick={() => startRequest(message || "Please pray for me.")} />
-            <QuickAction icon={HeartHandshake} label="Need Practical Help" onClick={() => startRequest(message || "I need some practical help.")} />
-            <QuickAction icon={Church} label="Find a Church" onClick={() => startRequest(message || "I'd like to connect with a church community.")} />
-          </div>
-
           <p className="text-xs text-[#B3AB9B] mt-8">
             "Cast all your anxiety on him because he cares for you." — 1 Peter 5:7
           </p>
+        </div>
+      </section>
+
+      <section className="max-w-3xl mx-auto px-6 py-12">
+        <h2 className="font-serif text-xl text-[#2B2620] text-center mb-1">How would you like to be part of this?</h2>
+        <p className="text-sm text-[#8A8375] text-center mb-6">Three simple ways to join our community</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <SignupCard
+            icon={HandHeart}
+            title="I Need Prayer"
+            description="Share your request — our AI listens, asks the right questions, and connects you to prayer and care."
+            cta="Submit a Request"
+            to="/request/new"
+            highlight
+          />
+          <SignupCard
+            icon={HeartHandshake}
+            title="I'm a Prayer Warrior"
+            description="Join a verified church's prayer team. Pray for others and set your availability for prayer calls."
+            cta="Get Involved"
+            to="/get-involved"
+          />
+          <SignupCard
+            icon={Church}
+            title="Register a Church"
+            description="List your church to receive prayer requests and mobilize your prayer team and volunteers."
+            cta="Register Church"
+            to="/register-church"
+          />
         </div>
       </section>
     </div>
   );
 }
 
-function QuickAction({ icon: Icon, label, onClick }) {
+function SignupCard({ icon: Icon, title, description, cta, to, highlight }) {
   return (
-    <button
-      onClick={onClick}
-      className="flex items-center justify-center gap-2 bg-white border border-[#EFE8DA] rounded-2xl py-3.5 px-4 text-sm font-medium text-[#2B2620] hover:border-[#8FAE9E] hover:shadow-md transition-all"
-    >
-      <Icon className="w-4 h-4 text-[#3D6E64]" />
-      {label}
-    </button>
+    <div className={`bg-white rounded-2xl border p-5 flex flex-col ${highlight ? "border-[#3D6E64] ring-1 ring-[#3D6E64]/20" : "border-[#EFE8DA]"}`}>
+      <div className="w-10 h-10 rounded-full bg-[#EAF2EE] flex items-center justify-center mb-3">
+        <Icon className="w-5 h-5 text-[#3D6E64]" />
+      </div>
+      <h3 className="font-medium text-[#2B2620] mb-1">{title}</h3>
+      <p className="text-xs text-[#8A8375] leading-relaxed mb-4 flex-1">{description}</p>
+      <Link to={to}>
+        <Button className={`w-full rounded-full text-sm ${highlight ? "bg-[#3D6E64] hover:bg-[#2F5850]" : "bg-white border border-[#EFE8DA] text-[#2B2620] hover:bg-[#F3EEE1]"}`}>
+          {cta}
+        </Button>
+      </Link>
+    </div>
   );
 }
