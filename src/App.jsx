@@ -59,10 +59,10 @@ const AuthenticatedApp = () => {
       <Route element={<AppLayout />}>
         <Route path="/" element={<Home />} />
         <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
-          <Route path="/request/new" element={<SubmitRequest />} />
           <Route path="/journey" element={<PrayerJourney />} />
           <Route path="/register-church" element={<ChurchRegister />} />
           <Route path="/get-involved" element={<GetInvolved />} />
+          <Route path="/request/new" element={<SubmitRequest />} />
           <Route path="/church-dashboard" element={<ChurchDashboard />} />
           <Route path="/prayer-team" element={<PrayerTeamQueue />} />
           <Route path="/volunteer" element={<VolunteerQueue />} />

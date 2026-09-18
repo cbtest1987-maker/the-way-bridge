@@ -16,6 +16,10 @@ export default function GetInvolved() {
   }, []);
 
   const join = async (role) => {
+    if (!isLoggedIn) {
+      window.location.href = `/login?returnTo=${encodeURIComponent("/get-involved")}`;
+      return;
+    }
     if (!selected) return;
     setSaving(true);
     await base44.auth.updateMe({
@@ -28,11 +32,19 @@ export default function GetInvolved() {
   };
 
   const hasChurch = !!user?.church_id;
+  const isLoggedIn = !!user;
 
   return (
     <div className="max-w-lg mx-auto px-6 py-10">
       <h1 className="font-serif text-2xl text-[#2B2620] mb-1">Get Involved</h1>
       <p className="text-sm text-[#8A8375] mb-6">Choose a verified church and how you'd like to serve.</p>
+
+      {!isLoggedIn && (
+        <div className="bg-[#EAF2EE] border border-[#BFD9CD] rounded-2xl p-4 mb-5 text-sm text-[#2B2620]">
+          <p className="font-medium mb-1">New here? Pick a role below to get started.</p>
+          <p className="text-xs text-[#5B5648]">You'll need to create a free account to join — it only takes a moment.</p>
+        </div>
+      )}
 
       {hasChurch && (
         <div className="bg-[#EAF2EE] border border-[#BFD9CD] rounded-2xl p-4 mb-5 text-sm text-[#2B2620]">
