@@ -30,16 +30,14 @@ function FunctionDisplay({ toolCall }) {
     parsedResults = toolCall.results;
   }
 
-  if (isFailed) {
-    meta = STATUS_META.failed;
-  }
+  const effectiveMeta = isFailed ? STATUS_META.failed : meta;
 
   return (
     <div className="mt-2 text-xs border border-[#F3EEE1] rounded-xl bg-[#FBF8F3] p-2.5">
       <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-2 w-full text-left">
-        <Icon className={`w-3.5 h-3.5 ${meta.color} ${isSpinning ? "animate-spin" : ""}`} />
+        <Icon className={`w-3.5 h-3.5 ${effectiveMeta.color} ${isSpinning ? "animate-spin" : ""}`} />
         <span className="font-medium text-[#5B5648] flex-1">{toolCall.name}</span>
-        <span className={meta.color}>{meta.label}</span>
+        <span className={effectiveMeta.color}>{effectiveMeta.label}</span>
         {expanded ? <ChevronUp className="w-3 h-3 text-[#8A8375]" /> : <ChevronDown className="w-3 h-3 text-[#8A8375]" />}
       </button>
       {expanded && !hideDetails && (
