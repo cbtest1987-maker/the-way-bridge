@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import StatusBadge from "@/components/shared/StatusBadge";
+import { Link } from "react-router-dom";
 
 export default function AdminVerification() {
   const [churches, setChurches] = useState([]);
@@ -32,7 +33,7 @@ export default function AdminVerification() {
 
       <div className="space-y-3">
         {churches.map((c) => (
-          <div key={c.id} className="bg-white rounded-3xl border border-[#EFE8DA] p-5">
+          <Link key={c.id} to={`/admin/church/${c.id}`} className="block bg-white rounded-3xl border border-[#EFE8DA] p-5 hover:border-[#3D6E64] transition-colors">
             <div className="flex items-start justify-between gap-3 mb-1">
               <p className="font-medium text-[#2B2620]">{c.name}</p>
               <StatusBadge status={c.verification_status} />
@@ -45,7 +46,7 @@ export default function AdminVerification() {
                 <Button size="sm" variant="outline" className="rounded-full" onClick={() => setStatus(c.id, "rejected")}>Reject</Button>
               </div>
             )}
-          </div>
+          </Link>
         ))}
       </div>
     </div>

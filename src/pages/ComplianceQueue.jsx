@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import StatusBadge from "@/components/shared/StatusBadge";
 import { useAuth } from "@/lib/AuthContext";
 import { isOwnRequest } from "@/lib/sod";
+import { Link } from "react-router-dom";
 
 export default function ComplianceQueue() {
   const { user } = useAuth();
@@ -68,6 +69,9 @@ export default function ComplianceQueue() {
               ) : (
                 <p className="text-xs text-[#8A8375]">Notes: {c.reviewer_notes || "—"}</p>
               )}
+              <Link to={`/admin/journey/${c.request_id}`} className="text-xs text-[#3D6E64] hover:underline mt-2 inline-block">
+                View full details →
+              </Link>
             </div>
           );
         })}

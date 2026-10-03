@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import StatusBadge from "@/components/shared/StatusBadge";
 import { ScrollText, Loader2, ChevronRight, ChevronDown } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function JudgeView() {
   const [runs, setRuns] = useState([]);
@@ -84,6 +85,9 @@ export default function JudgeView() {
                       </div>
                     </div>
                   ))}
+                  <Link to={`/admin/run/${run.id}`} className="inline-flex items-center gap-1 text-xs text-[#3D6E64] hover:underline mt-2">
+                    View full details <ChevronRight className="w-3 h-3" />
+                  </Link>
                 </div>
               )}
             </div>

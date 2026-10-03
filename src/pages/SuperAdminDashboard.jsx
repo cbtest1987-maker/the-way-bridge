@@ -114,14 +114,14 @@ export default function SuperAdminDashboard() {
           ) : (
             <div className="space-y-3">
               {recentJourneys.map((j) => (
-                <div key={j.id} className="border-b border-[#F3EEE1] pb-2 last:border-0">
+                <Link key={j.id} to={`/admin/journey/${j.id}`} className="block border-b border-[#F3EEE1] pb-2 last:border-0 hover:bg-[#FBF8F3] -mx-2 px-2 rounded-lg transition-colors">
                   <div className="flex items-center gap-2 mb-1">
                     <StatusBadge status={j.status} />
                     <StatusBadge status={j.safety_level} />
                   </div>
                   <p className="text-sm text-[#2B2620] line-clamp-2">{j.ai_summary || j.message}</p>
                   <p className="text-xs text-[#8A8375] mt-1">{new Date(j.created_date).toLocaleString()}</p>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -135,7 +135,7 @@ export default function SuperAdminDashboard() {
           ) : (
             <div className="space-y-3">
               {recentReviews.map((r) => (
-                <div key={r.id} className="border-b border-[#F3EEE1] pb-2 last:border-0">
+                <Link key={r.id} to={`/admin/journey/${r.journey_id}`} className="block border-b border-[#F3EEE1] pb-2 last:border-0 hover:bg-[#FBF8F3] -mx-2 px-2 rounded-lg transition-colors">
                   <div className="flex items-center gap-2 mb-1">
                     <StatusBadge status={r.safety_level} />
                     <StatusBadge status={r.status} />
@@ -144,7 +144,7 @@ export default function SuperAdminDashboard() {
                   {r.automation_paused && (
                     <p className="text-xs text-amber-600 mt-1">⚠ Automation paused</p>
                   )}
-                </div>
+                </Link>
               ))}
             </div>
           )}

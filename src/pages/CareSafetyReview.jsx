@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import StatusBadge from "@/components/shared/StatusBadge";
 import { ShieldAlert, Loader2 } from "lucide-react";
 import { getOwnJourneyIds } from "@/lib/sod";
+import { Link } from "react-router-dom";
 
 export default function CareSafetyReview() {
   const { user } = useAuth();
@@ -103,6 +104,9 @@ export default function CareSafetyReview() {
                   Close / Inappropriate
                 </Button>
               </div>
+              <Link to={`/admin/journey/${review.journey_id}`} className="text-xs text-[#3D6E64] hover:underline mt-2 inline-block">
+                View full journey details →
+              </Link>
             </div>
           );
         })}

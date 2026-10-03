@@ -28,6 +28,9 @@ import JudgeView from '@/pages/JudgeView';
 import CareSafetyReview from '@/pages/CareSafetyReview';
 import PrayerPoolOverview from '@/pages/PrayerPoolOverview';
 import SuperAdminDashboard from '@/pages/SuperAdminDashboard';
+import ChurchDetail from '@/pages/admin/ChurchDetail';
+import JourneyDetail from '@/pages/admin/JourneyDetail';
+import AgentRunDetail from '@/pages/admin/AgentRunDetail';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -78,6 +81,9 @@ const AuthenticatedApp = () => {
           <Route path="/care-safety-review" element={<CareSafetyReview />} />
           <Route path="/prayer-pool" element={<PrayerPoolOverview />} />
           <Route path="/admin" element={<SuperAdminDashboard />} />
+          <Route path="/admin/church/:id" element={<ChurchDetail />} />
+          <Route path="/admin/journey/:id" element={<JourneyDetail />} />
+          <Route path="/admin/run/:id" element={<AgentRunDetail />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

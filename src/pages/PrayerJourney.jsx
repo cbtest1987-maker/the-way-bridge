@@ -114,6 +114,12 @@ export default function PrayerJourney() {
                 </div>
               )}
 
+              {allRequests && (
+                <Link to={`/admin/journey/${j.id}`} className="text-xs text-[#3D6E64] hover:underline mt-2 inline-block">
+                  View full details →
+                </Link>
+              )}
+
               {needsFollowUp && (
                 <div className="mt-4 bg-[#EAF2EE] border border-[#BFD9CD] rounded-2xl p-4">
                   <p className="text-sm font-medium text-[#2B2620] mb-3">How are you doing?</p>
