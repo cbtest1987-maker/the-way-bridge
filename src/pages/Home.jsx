@@ -88,8 +88,8 @@ export default function Home() {
           />
           <SignupCard
             icon={HeartHandshake}
-            title="I'm a Prayer Warrior"
-            description="Join a verified church's prayer team. Pray for others and set your availability for prayer calls."
+            title="Serve Your Community"
+            description="Join a verified church to offer prayer, practical support, or help coordinate care."
             cta="Get Involved"
             to="/get-involved"
             userRole={user?.service_roles?.[0]}
