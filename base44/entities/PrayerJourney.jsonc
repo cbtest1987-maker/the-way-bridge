@@ -43,6 +43,7 @@
       "type": "string",
       "enum": [
         "open",
+        "prayer_care",
         "answered",
         "closed"
       ],

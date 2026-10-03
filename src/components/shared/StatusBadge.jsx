@@ -22,6 +22,7 @@ const STYLES = {
   none: "bg-stone-100 text-stone-500 border-stone-200",
   open: "bg-amber-50 text-amber-700 border-amber-200",
   resolved: "bg-stone-100 text-stone-500 border-stone-200",
+  prayer_care: "bg-[#EAF2EE] text-[#3D6E64] border-[#BFD9CD]",
 };
 
 export default function StatusBadge({ status, label }) {

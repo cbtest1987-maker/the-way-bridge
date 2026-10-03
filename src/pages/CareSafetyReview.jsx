@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import StatusBadge from "@/components/shared/StatusBadge";
-import { ShieldAlert, Loader2 } from "lucide-react";
+import { ShieldAlert, Loader2, HeartHandshake } from "lucide-react";
 import { getOwnJourneyIds } from "@/lib/sod";
 import { Link } from "react-router-dom";
 
@@ -46,6 +46,20 @@ export default function CareSafetyReview() {
       resolution,
       automation_paused: false
     });
+    setSaving(null);
+    load();
+  };
+
+  const releaseToPrayerCare = async (review) => {
+    setSaving(review.id);
+    try {
+      await base44.functions.invoke("releaseToPrayerCare", {
+        journey_id: review.journey_id,
+        reviewer_notes: notes[review.id] || ""
+      });
+    } catch (e) {
+      // handled silently
+    }
     setSaving(null);
     load();
   };
@@ -102,6 +116,9 @@ export default function CareSafetyReview() {
                 </Button>
                 <Button size="sm" variant="outline" className="rounded-full text-xs" onClick={() => resolve(review, "close_inappropriate")} disabled={saving === review.id}>
                   Close / Inappropriate
+                </Button>
+                <Button size="sm" className="rounded-full text-xs col-span-2 bg-[#3D6E64] hover:bg-[#2F5850] text-white" onClick={() => releaseToPrayerCare(review)} disabled={saving === review.id}>
+                  {saving === review.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><HeartHandshake className="w-3 h-3 mr-1" /> Release to Prayer Care</>}
                 </Button>
               </div>
               <Link to={`/admin/journey/${review.journey_id}`} className="text-xs text-[#3D6E64] hover:underline mt-2 inline-block">
