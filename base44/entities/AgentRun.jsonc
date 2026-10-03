@@ -1,0 +1,43 @@
+{
+  "name": "AgentRun",
+  "type": "object",
+  "properties": {
+    "journey_id": {
+      "type": "string"
+    },
+    "goal": {
+      "type": "string",
+      "description": "The agent's high-level goal for this run"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "running",
+        "completed",
+        "failed"
+      ],
+      "default": "running"
+    },
+    "safety_level": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "sensitive",
+        "danger"
+      ],
+      "default": "normal"
+    },
+    "detected_needs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "summary": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "goal"
+  ]
+}

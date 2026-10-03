@@ -1,0 +1,64 @@
+{
+  "name": "PrayerJourney",
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string",
+      "description": "The original prayer/care request text"
+    },
+    "is_anonymous": {
+      "type": "boolean",
+      "default": false
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "contact_email": {
+      "type": "string"
+    },
+    "contact_phone": {
+      "type": "string"
+    },
+    "location_text": {
+      "type": "string"
+    },
+    "ai_summary": {
+      "type": "string",
+      "description": "Compassionate, neutral summary suitable for prayer team"
+    },
+    "safety_level": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "sensitive",
+        "danger"
+      ],
+      "default": "normal"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "answered",
+        "closed"
+      ],
+      "default": "open"
+    },
+    "matched_church_id": {
+      "type": "string"
+    },
+    "follow_up_response": {
+      "type": "string",
+      "enum": [
+        "continue",
+        "answered",
+        "update",
+        "need_help"
+      ],
+      "description": "Next-morning follow-up response from requester"
+    }
+  },
+  "required": [
+    "message"
+  ]
+}

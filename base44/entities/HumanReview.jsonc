@@ -1,0 +1,53 @@
+{
+  "name": "HumanReview",
+  "type": "object",
+  "properties": {
+    "journey_id": {
+      "type": "string",
+      "required": true
+    },
+    "reason": {
+      "type": "string"
+    },
+    "safety_level": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "sensitive",
+        "danger"
+      ],
+      "default": "sensitive"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "resolved"
+      ],
+      "default": "open"
+    },
+    "reviewer_id": {
+      "type": "string"
+    },
+    "reviewer_notes": {
+      "type": "string"
+    },
+    "resolution": {
+      "type": "string",
+      "enum": [
+        "return_to_normal",
+        "care_handling",
+        "escalate",
+        "close_inappropriate"
+      ]
+    },
+    "automation_paused": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "journey_id",
+    "reason"
+  ]
+}

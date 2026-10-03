@@ -1,0 +1,35 @@
+{
+  "name": "AgentAction",
+  "type": "object",
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "description": "Parent AgentRun"
+    },
+    "action_type": {
+      "type": "string",
+      "description": "e.g. read_request, classify_needs, safety_check, create_journey, create_prayer_assignment, create_care_task, route_to_pool, query_eligible, human_review, schedule_followup"
+    },
+    "description": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string",
+      "description": "JSON string with action-specific context"
+    },
+    "result": {
+      "type": "string",
+      "enum": [
+        "success",
+        "failure",
+        "paused",
+        "escalated"
+      ],
+      "default": "success"
+    }
+  },
+  "required": [
+    "run_id",
+    "action_type"
+  ]
+}

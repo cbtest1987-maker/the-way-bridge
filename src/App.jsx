@@ -24,6 +24,8 @@ import ComplianceQueue from '@/pages/ComplianceQueue';
 import AdminVerification from '@/pages/AdminVerification';
 import PrayerWarriorAvailability from '@/pages/PrayerWarriorAvailability';
 import SchedulingAssistant from '@/pages/SchedulingAssistant';
+import JudgeView from '@/pages/JudgeView';
+import CareSafetyReview from '@/pages/CareSafetyReview';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -70,6 +72,8 @@ const AuthenticatedApp = () => {
           <Route path="/admin/verification" element={<AdminVerification />} />
           <Route path="/availability" element={<PrayerWarriorAvailability />} />
           <Route path="/schedule" element={<SchedulingAssistant />} />
+          <Route path="/judge" element={<JudgeView />} />
+          <Route path="/care-safety-review" element={<CareSafetyReview />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

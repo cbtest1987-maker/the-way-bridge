@@ -3,29 +3,36 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { HandHeart, Loader2 } from "lucide-react";
+import { HandHeart, Loader2, Clock, CheckCircle2 } from "lucide-react";
 
 export default function PrayerTeamQueue() {
   const { user } = useAuth();
-  const [needs, setNeeds] = useState([]);
-  const [requestsById, setRequestsById] = useState({});
-  const [myCommitments, setMyCommitments] = useState(new Set());
-  const [notes, setNotes] = useState({});
-  const [openNote, setOpenNote] = useState(null);
+  const [openAssignments, setOpenAssignments] = useState([]);
+  const [journeysById, setJourneysById] = useState({});
+  const [myAccepted, setMyAccepted] = useState(null);
+  const [note, setNote] = useState("");
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     if (!user?.church_id) return;
     setLoading(true);
-    const list = await base44.entities.Need.filter({ church_id: user.church_id, type: "prayer" }, "-created_date");
-    setNeeds(list);
-    const reqs = await Promise.all(list.map((n) => base44.entities.PrayerRequest.get(n.request_id)));
-    const map = {};
-    list.forEach((n, i) => (map[n.request_id] = reqs[i]));
-    setRequestsById(map);
-    const commitments = await base44.entities.PrayerCommitment.filter({ created_by_id: user.id });
-    setMyCommitments(new Set(commitments.map((c) => c.need_id)));
+
+    // Load open assignments
+    const open = await base44.entities.PrayerAssignment.filter({ status: "open" }, "-created_date");
+    setOpenAssignments(open);
+
+    // Load journeys for open assignments
+    const journeyIds = [...new Set(open.map(a => a.journey_id))];
+    const journeys = await Promise.all(journeyIds.map(id => base44.entities.PrayerJourney.get(id)));
+    const jMap = {};
+    journeyIds.forEach((id, i) => (jMap[id] = journeys[i]));
+    setJourneysById(jMap);
+
+    // Load my accepted assignment
+    const mine = await base44.entities.PrayerAssignment.filter({ assigned_warrior_id: user.id, status: "accepted" });
+    setMyAccepted(mine[0] || null);
+
     setLoading(false);
   }, [user]);
 
@@ -33,12 +40,40 @@ export default function PrayerTeamQueue() {
     load();
   }, [load]);
 
-  const iWillPray = async (need) => {
-    setSaving(need.id);
-    await base44.entities.PrayerCommitment.create({ request_id: need.request_id, need_id: need.id, note: notes[need.id] || "" });
-    setOpenNote(null);
-    setSaving(null);
+  const iWillPray = async (assignment) => {
+    setSaving(true);
+    const now = new Date();
+    const due = new Date(now.getTime() + 12 * 60 * 60 * 1000);
+    await base44.entities.PrayerAssignment.update(assignment.id, {
+      status: "accepted",
+      assigned_warrior_id: user.id,
+      accepted_at: now.toISOString(),
+      due_at: due.toISOString(),
+      warrior_note: note || undefined
+    });
+    setNote("");
+    setSaving(false);
     load();
+  };
+
+  const iPrayed = async () => {
+    if (!myAccepted) return;
+    setSaving(true);
+    await base44.entities.PrayerAssignment.update(myAccepted.id, {
+      status: "prayed",
+      prayed_at: new Date().toISOString()
+    });
+    setMyAccepted(null);
+    setSaving(false);
+    load();
+  };
+
+  const timeLeft = (dueAt) => {
+    const diff = new Date(dueAt).getTime() - Date.now();
+    if (diff <= 0) return "Overdue";
+    const hrs = Math.floor(diff / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hrs}h ${mins}m left`;
   };
 
   if (!user?.church_id) {
@@ -48,47 +83,56 @@ export default function PrayerTeamQueue() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-10">
       <h1 className="font-serif text-2xl text-[#2B2620] mb-1">Prayer Queue</h1>
-      <p className="text-sm text-[#8A8375] mb-6">Requests routed to your church, awaiting prayer.</p>
+      <p className="text-sm text-[#8A8375] mb-6">Open prayer requests awaiting a prayer warrior.</p>
+
+      {/* My accepted assignment */}
+      {myAccepted && (
+        <div className="bg-[#EAF2EE] border border-[#BFD9CD] rounded-3xl p-5 mb-6">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="w-4 h-4 text-[#3D6E64]" />
+            <p className="text-sm font-medium text-[#2B2620]">You are praying for this request</p>
+          </div>
+          {(() => {
+            const j = journeysById[myAccepted.journey_id];
+            return j ? (
+              <>
+                <p className="text-sm text-[#2B2620] leading-relaxed mb-2">{j.ai_summary || j.message}</p>
+                <p className="text-xs text-[#8A8375] mb-3">{j.is_anonymous ? "Anonymous request" : j.display_name || "A community member"}</p>
+                <p className="text-xs text-[#5B5648] mb-4">⏱ {timeLeft(myAccepted.due_at)}</p>
+                <Button onClick={iPrayed} disabled={saving} className="w-full rounded-full bg-[#3D6E64] hover:bg-[#2F5850] text-white">
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4 mr-1" /> I Prayed</>}
+                </Button>
+              </>
+            ) : null;
+          })()}
+        </div>
+      )}
 
       {loading && <p className="text-sm text-[#8A8375]">Loading...</p>}
-      {!loading && needs.length === 0 && <p className="text-sm text-[#8A8375]">No prayer requests right now.</p>}
+      {!loading && !myAccepted && openAssignments.length === 0 && <p className="text-sm text-[#8A8375]">No open prayer requests right now.</p>}
 
-      <div className="space-y-3">
-        {needs.map((need) => {
-          const req = requestsById[need.request_id];
-          if (!req) return null;
-          const prayed = myCommitments.has(need.id);
-          return (
-            <div key={need.id} className="bg-white rounded-3xl border border-[#EFE8DA] p-5">
-              <p className="text-sm text-[#2B2620] leading-relaxed mb-2">{req.ai_summary || req.message}</p>
-              <p className="text-xs text-[#8A8375] mb-3">{req.is_anonymous ? "Anonymous request" : req.display_name || "A community member"}</p>
-
-              {prayed ? (
-                <span className="text-xs font-medium text-[#3D6E64]">🙏 You prayed for this</span>
-              ) : openNote === need.id ? (
-                <div>
-                  <Textarea
-                    placeholder="Optional encouragement or Scripture..."
-                    className="min-h-[70px] mb-2"
-                    value={notes[need.id] || ""}
-                    onChange={(e) => setNotes((p) => ({ ...p, [need.id]: e.target.value }))}
-                  />
-                  <div className="flex gap-2">
-                    <Button size="sm" className="rounded-full bg-[#3D6E64] hover:bg-[#2F5850]" onClick={() => iWillPray(need)} disabled={saving === need.id}>
-                      {saving === need.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm"}
-                    </Button>
-                    <Button size="sm" variant="outline" className="rounded-full" onClick={() => iWillPray(need)}>Skip note</Button>
-                  </div>
-                </div>
-              ) : (
-                <Button size="sm" className="rounded-full bg-[#3D6E64] hover:bg-[#2F5850]" onClick={() => setOpenNote(need.id)}>
-                  <HandHeart className="w-4 h-4 mr-1" /> I Will Pray
+      {/* Open prayer pool */}
+      {!myAccepted && (
+        <div className="space-y-3">
+          {openAssignments.map((assignment) => {
+            const j = journeysById[assignment.journey_id];
+            if (!j) return null;
+            return (
+              <div key={assignment.id} className="bg-white rounded-3xl border border-[#EFE8DA] p-5">
+                <p className="text-sm text-[#2B2620] leading-relaxed mb-2">{j.ai_summary || j.message}</p>
+                <p className="text-xs text-[#8A8375] mb-3">{j.is_anonymous ? "Anonymous request" : j.display_name || "A community member"}</p>
+                <Button
+                  onClick={() => iWillPray(assignment)}
+                  disabled={saving}
+                  className="rounded-full bg-[#3D6E64] hover:bg-[#2F5850] text-white"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><HandHeart className="w-4 h-4 mr-1" /> I Will Pray</>}
                 </Button>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

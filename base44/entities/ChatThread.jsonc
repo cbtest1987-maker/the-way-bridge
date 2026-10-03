@@ -1,0 +1,33 @@
+{
+  "name": "ChatThread",
+  "type": "object",
+  "properties": {
+    "care_task_id": {
+      "type": "string"
+    },
+    "journey_id": {
+      "type": "string"
+    },
+    "requester_id": {
+      "type": "string"
+    },
+    "volunteer_id": {
+      "type": "string"
+    },
+    "last_message_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "closed"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "journey_id"
+  ]
+}

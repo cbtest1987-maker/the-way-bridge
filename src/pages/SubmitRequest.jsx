@@ -2,12 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, AlertTriangle, MessageCircle } from "lucide-react";
+import { Loader2, Sparkles, AlertTriangle, MessageCircle, ShieldCheck } from "lucide-react";
 import NeedBadge from "@/components/request/NeedBadge";
 import ChurchMatchCard from "@/components/request/ChurchMatchCard";
+import ImmediateDangerScreen from "@/components/request/ImmediateDangerScreen";
 import PrivacyNote from "@/components/shared/PrivacyNote";
 import { matchChurches } from "@/lib/churchMatch";
 
@@ -43,7 +43,6 @@ export default function SubmitRequest() {
       setFollowUpQuestions(questions);
       setFollowUpAnswers(questions.map(() => ""));
       if (questions.length === 0) {
-        // No follow-up questions needed — go straight to analysis
         runAnalysis([]);
       }
     } catch {
@@ -59,9 +58,14 @@ export default function SubmitRequest() {
     const formattedAnswers = answers
       .map((answer, i) => answer.trim() ? { question: followUpQuestions[i], answer: answer.trim() } : null)
       .filter(Boolean);
-    const res = await base44.functions.invoke("analyzeRequest", { message, follow_up_answers: formattedAnswers });
+    const res = await base44.functions.invoke("analyzeRequest", {
+      message,
+      follow_up_answers: formattedAnswers,
+      is_anonymous: anonymous,
+    });
     setAnalysis(res.data);
-    if (res.data.safety_status === "safe" || res.data.safety_status === "sensitive") {
+
+    if (res.data.safety_level === "normal") {
       const list = await base44.entities.Church.filter({ verification_status: "verified" });
       const needsWithConnection = res.data.needs.some((n) =>
         ["transportation", "food", "church_connection", "resources", "building", "church_planting", "fundraising", "disaster"].includes(n.type)
@@ -74,41 +78,20 @@ export default function SubmitRequest() {
   };
 
   const finalize = async () => {
-    setSubmitting(true);
-    const request = await base44.entities.PrayerRequest.create({
-      message,
-      is_anonymous: anonymous,
-      safety_status: analysis.safety_status,
-      status: analysis.safety_status === "flagged" || analysis.safety_status === "danger" ? "screening" : "matched",
-      ai_summary: analysis.ai_summary,
-      matched_church_id: selectedChurchId || undefined,
-    });
-
-    await Promise.all(
-      analysis.needs.map((n) =>
-        base44.entities.Need.create({
-          request_id: request.id,
-          type: n.type,
-          details: n.details,
-          church_id: selectedChurchId || undefined,
-        })
-      )
-    );
-
-    if (analysis.safety_status === "flagged" || analysis.safety_status === "danger") {
-      await base44.entities.ComplianceCase.create({
-        request_id: request.id,
-        reason: `Auto-flagged as "${analysis.safety_status}" by AI safety screening.`,
-      });
+    if (analysis.matched_church_id === undefined && selectedChurchId) {
+      await base44.entities.PrayerJourney.update(analysis.journey_id, { matched_church_id: selectedChurchId });
     }
-
     sessionStorage.removeItem("bridge_draft");
     navigate("/journey");
   };
 
+  const isDanger = analysis?.safety_level === "danger";
+  const isSensitive = analysis?.safety_level === "sensitive";
   const churchNeeded = churches.length > 0;
-  const isCrisis = analysis?.safety_status === "danger";
-  const isBlocked = analysis?.safety_status === "flagged";
+
+  if (isDanger && step === 3 && !analyzing) {
+    return <ImmediateDangerScreen onReturn={() => navigate("/")} />;
+  }
 
   return (
     <div className="max-w-xl mx-auto px-6 py-10">
@@ -206,24 +189,16 @@ export default function SubmitRequest() {
               </div>
               <p className="text-sm text-[#8A8375] mb-4">{analysis.ai_summary}</p>
 
-              {isCrisis && (
-                <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-2xl p-4 mb-4">
-                  <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-700">
-                    It sounds like you may be in crisis. Your request has been sent immediately to a trained human reviewer for urgent, caring follow-up. If you are in immediate danger, please contact local emergency services.
-                  </p>
-                </div>
-              )}
-              {isBlocked && (
+              {isSensitive && (
                 <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                   <p className="text-sm text-amber-700">
-                    Your request has been received and is being reviewed by our team before routing, to keep our community safe.
+                    Your request needs additional care and has been sent for human review. Response times vary. If your situation becomes urgent or you are in immediate danger, do not wait for a response — use the emergency or crisis resources available in your location.
                   </p>
                 </div>
               )}
 
-              {!isCrisis && !isBlocked && (
+              {!isDanger && !isSensitive && (
                 <div className="space-y-2 mb-4">
                   {analysis.needs.map((n, i) => (
                     <NeedBadge key={i} type={n.type} details={n.details} />
@@ -231,15 +206,19 @@ export default function SubmitRequest() {
                 </div>
               )}
 
-              <PrivacyNote>We only share the information needed to connect you with the right people.</PrivacyNote>
+              {!isDanger && (
+                <PrivacyNote>We only share the information needed to connect you with the right people.</PrivacyNote>
+              )}
 
-              <Button
-                onClick={() => (isCrisis || isBlocked ? finalize() : setStep(churchNeeded ? 4 : 5))}
-                disabled={submitting}
-                className="w-full mt-5 rounded-full bg-[#3D6E64] hover:bg-[#2F5850] text-white"
-              >
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continue"}
-              </Button>
+              {!isDanger && (
+                <Button
+                  onClick={() => (isSensitive ? finalize() : setStep(churchNeeded ? 4 : 5))}
+                  disabled={submitting}
+                  className="w-full mt-5 rounded-full bg-[#3D6E64] hover:bg-[#2F5850] text-white"
+                >
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continue"}
+                </Button>
+              )}
             </>
           )}
         </div>
@@ -278,10 +257,10 @@ export default function SubmitRequest() {
       {/* Step 5: Confirm */}
       {step === 5 && (
         <div className="bg-white rounded-3xl border border-[#EFE8DA] p-6 text-center">
-          <h2 className="font-serif text-xl text-[#2B2620] mb-2">Ready to send this to prayer</h2>
-          <p className="text-sm text-[#8A8375] mb-6">Your request will be prayed for and, where relevant, gently routed to caring hands.</p>
+          <h2 className="font-serif text-xl text-[#2B2620] mb-2">Your prayer request is in caring hands</h2>
+          <p className="text-sm text-[#8A8375] mb-6">Your request has been routed to prayer warriors and, where relevant, connected to caring volunteers. We'll follow up with you tomorrow morning.</p>
           <Button onClick={finalize} disabled={submitting} className="w-full rounded-full bg-[#3D6E64] hover:bg-[#2F5850] text-white">
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Submit Request"}
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "View My Prayer Journey"}
           </Button>
         </div>
       )}

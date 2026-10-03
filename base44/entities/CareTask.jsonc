@@ -1,0 +1,49 @@
+{
+  "name": "CareTask",
+  "type": "object",
+  "properties": {
+    "journey_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "transportation",
+        "food",
+        "church_connection",
+        "resources",
+        "building",
+        "church_planting",
+        "fundraising",
+        "disaster"
+      ]
+    },
+    "details": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "accepted",
+        "completed",
+        "declined"
+      ],
+      "default": "open"
+    },
+    "assigned_volunteer_id": {
+      "type": "string"
+    },
+    "church_id": {
+      "type": "string"
+    },
+    "requester_approved": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "journey_id",
+    "type"
+  ]
+}

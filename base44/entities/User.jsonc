@@ -15,17 +15,61 @@
       "type": "string",
       "enum": [
         "requester",
-        "prayer_team",
-        "volunteer",
+        "prayer_warrior",
+        "care_volunteer",
         "church_admin",
-        "compliance_reviewer"
+        "church_connect_coordinator"
       ],
       "default": "requester",
-      "description": "The person's role within theWay Bridge AI."
+      "description": "Primary role within theWay Bridge AI."
     },
     "church_id": {
       "type": "string",
-      "description": "Church this user is affiliated with (for prayer_team, volunteer, church_admin roles)."
+      "description": "Church this user is affiliated with."
+    },
+    "service_roles": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "prayer_warrior",
+          "care_volunteer",
+          "church_connect_coordinator"
+        ]
+      },
+      "description": "Church service roles a user holds (can be multiple)."
+    },
+    "church_approved": {
+      "type": "boolean",
+      "default": false,
+      "description": "Church admin approval for service roles."
+    },
+    "background_check_status": {
+      "type": "string",
+      "enum": [
+        "none",
+        "pending",
+        "cleared",
+        "failed"
+      ],
+      "default": "none"
+    },
+    "volunteer_capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "e.g. transportation, food, resources"
+    },
+    "is_default_prayer_warrior": {
+      "type": "boolean",
+      "default": false,
+      "description": "Designated default prayer warrior for timeout reassignment."
+    },
+    "care_safety_reviewer": {
+      "type": "boolean",
+      "default": false,
+      "description": "Privileged permission assigned by Church Admin for care & safety review."
     },
     "volunteer_status": {
       "type": "string",
@@ -35,7 +79,7 @@
         "approved"
       ],
       "default": "none",
-      "description": "Approval status when app_role is volunteer."
+      "description": "Legacy approval status."
     }
   }
 }

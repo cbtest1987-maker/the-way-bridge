@@ -1,0 +1,49 @@
+{
+  "name": "PrayerAssignment",
+  "type": "object",
+  "properties": {
+    "journey_id": {
+      "type": "string",
+      "description": "Parent PrayerJourney"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "accepted",
+        "prayed",
+        "completed",
+        "timeout_reassigned",
+        "default_assigned"
+      ],
+      "default": "open"
+    },
+    "assigned_warrior_id": {
+      "type": "string"
+    },
+    "accepted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "due_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "accepted_at + 12 hours"
+    },
+    "prayed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "is_default_warrior": {
+      "type": "boolean",
+      "default": false
+    },
+    "warrior_note": {
+      "type": "string",
+      "description": "Optional encouragement or scripture from the warrior"
+    }
+  },
+  "required": [
+    "journey_id"
+  ]
+}
