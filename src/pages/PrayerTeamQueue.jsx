@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { HandHeart, Loader2, Clock, CheckCircle2 } from "lucide-react";
+import { getOwnJourneyIds } from "@/lib/sod";
 
 export default function PrayerTeamQueue() {
   const { user } = useAuth();
@@ -29,10 +30,8 @@ export default function PrayerTeamQueue() {
     journeyIds.forEach((id, i) => (jMap[id] = journeys[i]));
     setJourneysById(jMap);
 
-    // Exclude the warrior's own requests from the pool
-    const ownJourneyIds = new Set(
-      journeys.filter(j => j.requester_id === user.id || j.created_by_id === user.id).map(j => j.id)
-    );
+    // SOD: exclude the warrior's own requests from the pool
+    const ownJourneyIds = getOwnJourneyIds(journeys, user.id);
     setOpenAssignments(open.filter(a => !ownJourneyIds.has(a.journey_id)));
 
     // Load my accepted assignment

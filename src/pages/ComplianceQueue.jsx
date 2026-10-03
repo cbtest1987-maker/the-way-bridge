@@ -3,8 +3,11 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import StatusBadge from "@/components/shared/StatusBadge";
+import { useAuth } from "@/lib/AuthContext";
+import { isOwnRequest } from "@/lib/sod";
 
 export default function ComplianceQueue() {
+  const { user } = useAuth();
   const [cases, setCases] = useState([]);
   const [requests, setRequests] = useState({});
   const [notes, setNotes] = useState({});
@@ -18,8 +21,12 @@ export default function ComplianceQueue() {
     const map = {};
     list.forEach((c, i) => (map[c.request_id] = reqs[i]));
     setRequests(map);
+
+    // SOD: exclude the reviewer's own requests
+    const ownReqIds = new Set(reqs.filter(r => isOwnRequest(r, user?.id)).map(r => r.id));
+    setCases(list.filter(c => !ownReqIds.has(c.request_id)));
     setLoading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     load();

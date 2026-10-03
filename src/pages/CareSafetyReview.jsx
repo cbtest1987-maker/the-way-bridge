@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import StatusBadge from "@/components/shared/StatusBadge";
 import { ShieldAlert, Loader2 } from "lucide-react";
+import { getOwnJourneyIds } from "@/lib/sod";
 
 export default function CareSafetyReview() {
   const { user } = useAuth();
@@ -24,8 +25,12 @@ export default function CareSafetyReview() {
     const map = {};
     journeyIds.forEach((id, i) => (map[id] = journeys[i]));
     setJourneysById(map);
+
+    // SOD: exclude the reviewer's own requests
+    const ownIds = getOwnJourneyIds(journeys, user?.id);
+    setReviews(list.filter(r => !ownIds.has(r.journey_id)));
     setLoading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     load();
