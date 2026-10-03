@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { HandHeart, Car, Church, ShieldCheck, LifeBuoy, ShieldAlert } from "lucide-react";
 import StatusBadge from "@/components/shared/StatusBadge";
+import RoleCard from "@/components/shared/RoleCard";
 
 const VOLUNTEER_CAPS = ["transportation", "food", "resources", "building", "church_planting", "fundraising", "disaster"];
 
@@ -195,25 +196,5 @@ export default function GetInvolved() {
         </p>
       )}
     </div>
-  );
-}
-
-function RoleCard({ icon: Icon, title, desc, requirements, selected, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-3 border rounded-2xl p-4 transition-colors text-left ${selected ? "border-[#3D6E64] bg-[#EAF2EE]" : "border-[#EFE8DA] hover:border-[#8FAE9E]"}`}
-    >
-      <Icon className="w-5 h-5 text-[#3D6E64] shrink-0" />
-      <div className="flex-1">
-        <p className="text-sm font-medium text-[#2B2620]">{title}</p>
-        <p className="text-xs text-[#8A8375] mb-1">{desc}</p>
-        <div className="flex flex-wrap gap-1">
-          {requirements.map((r, i) => (
-            <span key={i} className="text-xs px-1.5 py-0.5 rounded bg-[#FBF8F3] text-[#8A8375]">{r}</span>
-          ))}
-        </div>
-      </div>
-    </button>
   );
 }
