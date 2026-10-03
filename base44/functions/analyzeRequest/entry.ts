@@ -60,13 +60,17 @@ Return only the structured result.`;
       }
     });
 
+    // When not anonymous, auto-populate display name and contact email from the authenticated user
+    const resolvedDisplayName = is_anonymous ? undefined : (display_name || user.full_name || undefined);
+    const resolvedContactEmail = is_anonymous ? undefined : (contact_email || user.email || undefined);
+
     // Create PrayerJourney under the user's identity so it appears in their "My Journey" list
     const journey = await base44.entities.PrayerJourney.create({
       requester_id: user.id,
       message: trimmed,
       is_anonymous: is_anonymous || false,
-      display_name: display_name || undefined,
-      contact_email: contact_email || undefined,
+      display_name: resolvedDisplayName,
+      contact_email: resolvedContactEmail,
       location_text: location_text || undefined,
       ai_summary: analysis.ai_summary,
       safety_level: analysis.safety_level,
