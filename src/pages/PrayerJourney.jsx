@@ -137,6 +137,12 @@ export default function PrayerJourney() {
                 </div>
               </div>
             )}
+
+            {isOwnRequest && (j.status === "answered" || j.status === "closed") && (
+              <Button size="sm" variant="outline" className="rounded-full mt-3 w-full text-xs" onClick={() => setTestimonyJourney(j)}>
+                <HeartHandshake className="w-3 h-3 mr-1" /> Share Your Testimony
+              </Button>
+            )}
           </div>
         );
 
