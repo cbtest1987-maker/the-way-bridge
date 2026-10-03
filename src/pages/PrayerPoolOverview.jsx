@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import StatusBadge from "@/components/shared/StatusBadge";
 import { Users, CheckCircle2, Clock, UserCheck, Loader2 } from "lucide-react";
+import BackButton from "@/components/shared/BackButton";
 
 export default function PrayerPoolOverview() {
   const { user } = useAuth();
@@ -41,7 +42,12 @@ export default function PrayerPoolOverview() {
   }, [load]);
 
   if (!user?.church_id) {
-    return <div className="max-w-lg mx-auto px-6 py-16 text-center text-[#8A8375]">You need to be a church admin to view the prayer pool.</div>;
+    return (
+      <div className="max-w-lg mx-auto px-6 py-16 text-center text-[#8A8375]">
+        <BackButton />
+        <p>You need to be a church admin to view the prayer pool.</p>
+      </div>
+    );
   }
 
   const acceptedByWarrior = {};
@@ -66,6 +72,7 @@ export default function PrayerPoolOverview() {
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-10">
+      <BackButton />
       <h1 className="font-serif text-2xl text-[#2B2620] mb-1">Prayer Pool Overview</h1>
       <p className="text-sm text-[#8A8375] mb-6">All approved prayer warriors, their current status, and the default pool.</p>
 
