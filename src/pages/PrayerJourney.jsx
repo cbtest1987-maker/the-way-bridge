@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import StatusBadge from "@/components/shared/StatusBadge";
 import NeedBadge from "@/components/request/NeedBadge";
+import RequestHistory from "@/components/journey/RequestHistory";
 import { HandHeart, HeartHandshake, RefreshCw, CheckCircle2, LifeBuoy } from "lucide-react";
 
 export default function PrayerJourney() {
@@ -13,13 +14,18 @@ export default function PrayerJourney() {
   const [assignmentsByJourney, setAssignmentsByJourney] = useState({});
   const [tasksByJourney, setTasksByJourney] = useState({});
   const [loading, setLoading] = useState(true);
+  const [showAll, setShowAll] = useState(false);
+  const [next, setNext] = useState(null);
+  const allRequests = user?.role === "admin" && showAll;
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (cursor = null) => {
     if (!user) return;
     setLoading(true);
-    const page = await base44.entities.PrayerJourney.filter({ created_by_id: user.id }, { sort: "-created_date", limit: 50 });
-    const list = page.items || page;
-    setJourneys(list);
+    const query = allRequests ? {} : { $or: [{ requester_id: user.id }, { created_by_id: user.id }] };
+    const page = await base44.entities.PrayerJourney.filter(query, { sort: "-created_date", limit: 50, ...(cursor ? { cursor } : {}) });
+    const list = page.items;
+    setJourneys(previous => cursor ? [...previous, ...list] : list);
+    setNext(page.has_more ? page.next_cursor : null);
 
     const [allAssignments, allTasks] = await Promise.all([
       Promise.all(list.map(j => base44.entities.PrayerAssignment.filter({ journey_id: j.id }, "-created_date"))),
@@ -32,10 +38,10 @@ export default function PrayerJourney() {
       aMap[j.id] = allAssignments[i];
       tMap[j.id] = allTasks[i];
     });
-    setAssignmentsByJourney(aMap);
-    setTasksByJourney(tMap);
+    setAssignmentsByJourney(previous => cursor ? { ...previous, ...aMap } : aMap);
+    setTasksByJourney(previous => cursor ? { ...previous, ...tMap } : tMap);
     setLoading(false);
-  }, [user]);
+  }, [user, allRequests]);
 
   useEffect(() => {
     load();
@@ -54,17 +60,22 @@ export default function PrayerJourney() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-10">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="font-serif text-2xl text-[#2B2620]">My Prayer Journey</h1>
+        <h1 className="font-serif text-2xl text-[#2B2620]">{allRequests ? "All Prayer Requests" : "My Prayer Journey"}</h1>
         <Link to="/request/new">
           <Button size="sm" className="rounded-full bg-[#3D6E64] hover:bg-[#2F5850]">New Request</Button>
         </Link>
       </div>
 
+      {user?.role === "admin" && <div className="mb-4 flex flex-wrap gap-2">
+        <Button variant={allRequests ? "outline" : "default"} onClick={() => setShowAll(false)}>My requests</Button>
+        <Button variant={allRequests ? "default" : "outline"} onClick={() => setShowAll(true)}>All requests (admin)</Button>
+      </div>}
+      {allRequests && <p className="mb-4 text-sm text-muted-foreground">Includes older requests with no recorded requester. These are not assigned to your personal account.</p>}
       {loading && <p className="text-sm text-[#8A8375]">Loading your journey...</p>}
 
       {!loading && journeys.length === 0 && (
         <div className="text-center py-16">
-          <p className="text-[#8A8375] mb-4">You haven't submitted a prayer request yet.</p>
+          <p className="text-[#8A8375] mb-4">{allRequests ? "No current prayer journeys found." : "No current prayer journeys linked to your account. Check your earlier request history below."}</p>
           <Link to="/request/new">
             <Button className="rounded-full bg-[#3D6E64] hover:bg-[#2F5850]">Ask for Prayer</Button>
           </Link>
@@ -77,10 +88,12 @@ export default function PrayerJourney() {
           const tasks = tasksByJourney[j.id] || [];
           const latestAssignment = assignments[0];
           const isPrayed = assignments.some(a => a.status === "prayed" || a.status === "completed");
-          const needsFollowUp = j.status === "open" && isPrayed && !j.follow_up_response;
+          const isOwnRequest = j.requester_id === user?.id || j.created_by_id === user?.id;
+          const needsFollowUp = isOwnRequest && j.status === "open" && isPrayed && !j.follow_up_response;
 
           return (
             <div key={j.id} className="bg-white rounded-3xl border border-[#EFE8DA] p-5">
+              {allRequests && <p className="mb-2 text-xs text-muted-foreground">{new Date(j.created_date).toLocaleString()} · {j.requester_id || (!j.created_by_id?.startsWith("service_") ? j.created_by_id : "Requester not recorded")}</p>}
               <div className="flex items-center gap-2 mb-2">
                 <StatusBadge status={j.status} />
                 <StatusBadge status={j.safety_level} />
@@ -124,6 +137,8 @@ export default function PrayerJourney() {
           );
         })}
       </div>
+      {next && <Button variant="outline" disabled={loading} onClick={() => load(next)}>Load more journeys</Button>}
+      {user && <RequestHistory userId={user.id} showAll={allRequests} />}
     </div>
   );
 }

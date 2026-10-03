@@ -2,6 +2,10 @@
   "name": "PrayerJourney",
   "type": "object",
   "properties": {
+    "requester_id": {
+      "type": "string",
+      "description": "Authenticated requester ID recorded at submission"
+    },
     "message": {
       "type": "string",
       "description": "The original prayer/care request text"

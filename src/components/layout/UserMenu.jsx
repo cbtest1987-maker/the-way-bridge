@@ -2,10 +2,14 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/AuthContext";
-import { LogOut } from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import NavLinks from "@/components/layout/NavLinks";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export default function UserMenu({ user }) {
   const { logout } = useAuth();
+  const location = useLocation();
   if (!user) {
     return (
       <div className="flex items-center gap-2">
@@ -20,6 +24,10 @@ export default function UserMenu({ user }) {
   }
   return (
     <div className="flex items-center gap-3">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="md:hidden" aria-label="Open navigation"><Menu /></Button></DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="p-4 md:hidden"><NavLinks user={user} currentPath={location.pathname} mobile /></DropdownMenuContent>
+      </DropdownMenu>
       <span className="hidden sm:inline text-sm text-[#8A8375]">{user.full_name?.split(" ")[0]}</span>
       <button
         onClick={() => logout()}

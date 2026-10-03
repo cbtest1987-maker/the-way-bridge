@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-export default function NavLinks({ user, currentPath }) {
+export default function NavLinks({ user, currentPath, mobile = false }) {
   const links = [];
   const roles = user?.service_roles || [];
   if (user) links.push({ to: "/journey", label: "My Journey" });
@@ -14,7 +14,7 @@ export default function NavLinks({ user, currentPath }) {
   if (user) links.push({ to: "/get-involved", label: "Get Involved" });
 
   return (
-    <nav className="hidden md:flex items-center gap-6 text-sm">
+    <nav className={mobile ? "flex flex-col gap-4 text-sm" : "hidden md:flex items-center gap-6 text-sm"}>
       {links.map((l) => (
         <Link
           key={l.to}

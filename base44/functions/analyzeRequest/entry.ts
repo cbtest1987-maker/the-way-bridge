@@ -62,6 +62,7 @@ Return only the structured result.`;
 
     // Create PrayerJourney under the user's identity so it appears in their "My Journey" list
     const journey = await base44.entities.PrayerJourney.create({
+      requester_id: user.id,
       message: trimmed,
       is_anonymous: is_anonymous || false,
       display_name: display_name || undefined,
