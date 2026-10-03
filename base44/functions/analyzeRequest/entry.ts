@@ -60,8 +60,8 @@ Return only the structured result.`;
       }
     });
 
-    // Create PrayerJourney
-    const journey = await base44.asServiceRole.entities.PrayerJourney.create({
+    // Create PrayerJourney under the user's identity so it appears in their "My Journey" list
+    const journey = await base44.entities.PrayerJourney.create({
       message: trimmed,
       is_anonymous: is_anonymous || false,
       display_name: display_name || undefined,
