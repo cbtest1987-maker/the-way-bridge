@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { HandHeart, HeartHandshake, Church, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import Logo from "@/components/shared/Logo";
 
 const HERO_IMG = "https://media.base44.com/images/public/6aa22be9a709fe9e7a17a711/93fb0f247_generated_image.png";
 
@@ -35,6 +36,7 @@ export default function Home() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[#FBF8F3]/60 via-[#FBF8F3]/85 to-[#FBF8F3]" />
         <div className="relative max-w-3xl mx-auto px-6 pt-16 pb-14 text-center">
+          <Logo className="max-w-[200px] mx-auto mb-6" />
           <p className="text-xs uppercase tracking-[0.2em] text-[#8FAE9E] font-medium mb-4">You are not alone</p>
           <h1 className="font-serif text-4xl sm:text-5xl text-[#2B2620] leading-tight mb-4">
             How can we pray<br />for you today?
