@@ -13,8 +13,8 @@ export default function GetInvolved() {
   const { user, checkUserAuth } = useAuth();
   const [churches, setChurches] = useState([]);
   const [selected, setSelected] = useState(user?.church_id || "");
-  const [selectedRole, setSelectedRole] = useState(null);
-  const [caps, setCaps] = useState([]);
+  const [selectedRole, setSelectedRole] = useState(user?.service_roles?.[0] || null);
+  const [caps, setCaps] = useState(user?.volunteer_capabilities || []);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
