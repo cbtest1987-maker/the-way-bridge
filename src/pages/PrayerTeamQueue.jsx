@@ -36,7 +36,18 @@ export default function PrayerTeamQueue() {
 
     // Load my accepted assignment
     const mine = await base44.entities.PrayerAssignment.filter({ assigned_warrior_id: user.id, status: "accepted" });
-    setMyAccepted(mine[0] || null);
+    const acceptedAssignment = mine[0] || null;
+    setMyAccepted(acceptedAssignment);
+
+    // Ensure the accepted assignment's journey is in the map
+    if (acceptedAssignment && acceptedAssignment.journey_id && !jMap[acceptedAssignment.journey_id]) {
+      try {
+        jMap[acceptedAssignment.journey_id] = await base44.entities.PrayerJourney.get(acceptedAssignment.journey_id);
+      } catch (e) {
+        // journey may not be accessible; leave undefined
+      }
+    }
+    setJourneysById(jMap);
 
     setLoading(false);
   }, [user]);
