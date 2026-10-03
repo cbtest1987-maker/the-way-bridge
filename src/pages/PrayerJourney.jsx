@@ -17,7 +17,8 @@ export default function PrayerJourney() {
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const list = await base44.entities.PrayerJourney.filter({ created_by_id: user.id }, "-created_date");
+    const page = await base44.entities.PrayerJourney.filter({ created_by_id: user.id }, { sort: "-created_date", limit: 50 });
+    const list = page.items || page;
     setJourneys(list);
 
     const [allAssignments, allTasks] = await Promise.all([
