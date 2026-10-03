@@ -1,7 +1,7 @@
 import React from "react";
 import { Image } from "@/components/ui/image";
 
-const LOGO_URL = "https://media.base44.com/images/public/6aa22be9a709fe9e7a17a711/3fee3f97b_9DAE92CD-06D4-42BD-93CE-B4A0F8343963.png";
+const LOGO_URL = "https://media.base44.com/images/public/6aa22be9a709fe9e7a17a711/e30518a0f_52338243-9BC8-49CE-A8DC-0BE2D26126B6.png";
 
 export default function Logo({ className = "", showText = true, variant = "full" }) {
   if (variant === "icon") {
