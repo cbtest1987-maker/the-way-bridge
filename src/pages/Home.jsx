@@ -13,7 +13,7 @@ const HERO_IMG = "https://media.base44.com/images/public/6aa22be9a709fe9e7a17a71
 export default function Home() {
   const [message, setMessage] = useState("");
   const [anonymous, setAnonymous] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   const startRequest = (prefill) => {
@@ -92,6 +92,8 @@ export default function Home() {
             description="Join a verified church's prayer team. Pray for others and set your availability for prayer calls."
             cta="Get Involved"
             to="/get-involved"
+            userRole={user?.service_roles?.[0]}
+            approved={user?.church_approved}
           />
           <SignupCard
             icon={Church}
@@ -106,7 +108,9 @@ export default function Home() {
   );
 }
 
-function SignupCard({ icon: Icon, title, description, cta, to, highlight }) {
+function SignupCard({ icon: Icon, title, description, cta, to, highlight, userRole, approved }) {
+  const showStatus = userRole === "prayer_warrior";
+  const statusLabel = approved ? "Approved ✓" : "Pending Approval";
   return (
     <div className={`bg-white rounded-2xl border p-5 flex flex-col ${highlight ? "border-[#3D6E64] ring-1 ring-[#3D6E64]/20" : "border-[#EFE8DA]"}`}>
       <div className="w-10 h-10 rounded-full bg-[#EAF2EE] flex items-center justify-center mb-3">
@@ -114,11 +118,19 @@ function SignupCard({ icon: Icon, title, description, cta, to, highlight }) {
       </div>
       <h3 className="font-medium text-[#2B2620] mb-1">{title}</h3>
       <p className="text-xs text-[#8A8375] leading-relaxed mb-4 flex-1">{description}</p>
-      <Link to={to}>
-        <Button className={`w-full rounded-full text-sm ${highlight ? "bg-[#3D6E64] hover:bg-[#2F5850]" : "bg-white border border-[#EFE8DA] text-[#2B2620] hover:bg-[#F3EEE1]"}`}>
-          {cta}
-        </Button>
-      </Link>
+      {showStatus ? (
+        <Link to={to}>
+          <Button className={`w-full rounded-full text-sm ${approved ? "bg-[#3D6E64] hover:bg-[#2F5850] text-white" : "bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100"}`}>
+            {statusLabel}
+          </Button>
+        </Link>
+      ) : (
+        <Link to={to}>
+          <Button className={`w-full rounded-full text-sm ${highlight ? "bg-[#3D6E64] hover:bg-[#2F5850]" : "bg-white border border-[#EFE8DA] text-[#2B2620] hover:bg-[#F3EEE1]"}`}>
+            {cta}
+          </Button>
+        </Link>
+      )}
     </div>
   );
 }
