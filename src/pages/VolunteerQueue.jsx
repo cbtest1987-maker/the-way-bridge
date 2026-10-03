@@ -22,6 +22,12 @@ export default function VolunteerQueue() {
     const map = {};
     journeyIds.forEach((id, i) => (map[id] = journeys[i]));
     setJourneysById(map);
+
+    // Exclude the volunteer's own requests from the queue
+    const ownJourneyIds = new Set(
+      journeys.filter(j => j.requester_id === user.id || j.created_by_id === user.id).map(j => j.id)
+    );
+    setTasks(list.filter(t => !ownJourneyIds.has(t.journey_id)));
     setLoading(false);
   }, [user]);
 

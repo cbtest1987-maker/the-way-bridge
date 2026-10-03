@@ -29,6 +29,12 @@ export default function PrayerTeamQueue() {
     journeyIds.forEach((id, i) => (jMap[id] = journeys[i]));
     setJourneysById(jMap);
 
+    // Exclude the warrior's own requests from the pool
+    const ownJourneyIds = new Set(
+      journeys.filter(j => j.requester_id === user.id || j.created_by_id === user.id).map(j => j.id)
+    );
+    setOpenAssignments(open.filter(a => !ownJourneyIds.has(a.journey_id)));
+
     // Load my accepted assignment
     const mine = await base44.entities.PrayerAssignment.filter({ assigned_warrior_id: user.id, status: "accepted" });
     setMyAccepted(mine[0] || null);
