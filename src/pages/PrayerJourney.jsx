@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import StatusBadge from "@/components/shared/StatusBadge";
 import NeedBadge from "@/components/request/NeedBadge";
 import RequestHistory from "@/components/journey/RequestHistory";
+import TestimonyDialog from "@/components/journey/TestimonyDialog";
 import { HandHeart, HeartHandshake, RefreshCw, CheckCircle2, LifeBuoy } from "lucide-react";
 
 export default function PrayerJourney() {
@@ -16,6 +17,7 @@ export default function PrayerJourney() {
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
   const [next, setNext] = useState(null);
+  const [testimonyJourney, setTestimonyJourney] = useState(null);
   const allRequests = user?.role === "admin" && showAll;
 
   const load = useCallback(async (cursor = null) => {
@@ -51,6 +53,8 @@ export default function PrayerJourney() {
     await base44.entities.PrayerJourney.update(journeyId, { follow_up_response: response });
     if (response === "answered") {
       await base44.entities.PrayerJourney.update(journeyId, { status: "answered" });
+      const journey = journeys.find(j => j.id === journeyId);
+      if (journey) setTestimonyJourney(journey);
     } else if (response === "continue") {
       await base44.entities.PrayerAssignment.create({ journey_id: journeyId, status: "open" });
     }
@@ -160,6 +164,13 @@ export default function PrayerJourney() {
       })()}
       {next && <Button variant="outline" disabled={loading} onClick={() => load(next)}>Load more journeys</Button>}
       {user && <RequestHistory userId={user.id} showAll={allRequests} />}
+      {testimonyJourney && (
+        <TestimonyDialog
+          journey={testimonyJourney}
+          open={!!testimonyJourney}
+          onClose={() => setTestimonyJourney(null)}
+        />
+      )}
     </div>
   );
 }
