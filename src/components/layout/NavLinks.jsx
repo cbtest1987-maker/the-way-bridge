@@ -10,6 +10,7 @@ export default function NavLinks({ user, currentPath, mobile = false }) {
   if (user?.app_role === "church_admin") links.push({ to: "/church-dashboard", label: "Church Dashboard" });
   if (user?.app_role === "church_admin" || user?.role === "admin") links.push({ to: "/prayer-pool", label: "Prayer Pool" });
   if (user?.care_safety_reviewer || user?.role === "admin") links.push({ to: "/care-safety-review", label: "Care & Safety" });
+  if (user?.role === "admin") links.push({ to: "/admin", label: "Admin" });
   if (user?.role === "admin") links.push({ to: "/admin/verification", label: "Verify Churches" });
   if (user?.role === "admin") links.push({ to: "/judge", label: "Agent Audit" });
   if (user) links.push({ to: "/get-involved", label: "Get Involved" });

@@ -27,6 +27,7 @@ import SchedulingAssistant from '@/pages/SchedulingAssistant';
 import JudgeView from '@/pages/JudgeView';
 import CareSafetyReview from '@/pages/CareSafetyReview';
 import PrayerPoolOverview from '@/pages/PrayerPoolOverview';
+import SuperAdminDashboard from '@/pages/SuperAdminDashboard';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -76,6 +77,7 @@ const AuthenticatedApp = () => {
           <Route path="/judge" element={<JudgeView />} />
           <Route path="/care-safety-review" element={<CareSafetyReview />} />
           <Route path="/prayer-pool" element={<PrayerPoolOverview />} />
+          <Route path="/admin" element={<SuperAdminDashboard />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
