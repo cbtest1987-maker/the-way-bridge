@@ -143,6 +143,24 @@ export const TOOL_SCHEMAS = [
   {
     type: 'function',
     function: {
+      name: 'create_church_connect_request',
+      description: 'Create a church-to-church connection request when a church needs space, building, or resource support from another church. Requires both church IDs and the need type.',
+      parameters: {
+        type: 'object',
+        properties: {
+          journey_id: { type: 'string', description: 'The ID of the PrayerJourney' },
+          requesting_church_id: { type: 'string', description: 'The church requesting help' },
+          responding_church_id: { type: 'string', description: 'The church being asked to help' },
+          need_type: { type: 'string', enum: ['space', 'building', 'church_planting', 'fundraising', 'disaster', 'resources'], description: 'The type of support needed' },
+          details: { type: 'string', description: 'Specific details about what is needed' },
+        },
+        required: ['journey_id', 'requesting_church_id', 'responding_church_id', 'need_type'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'write_audit_event',
       description: 'Write an audit event to the agent action log for observability and compliance.',
       parameters: {
@@ -206,11 +224,32 @@ export async function dispatchTool(toolName, args, ctx) {
     }
 
     case 'find_eligible_care_volunteers': {
+      // Enforce per-volunteer eligibility: church_verified AND church_approved AND background_check_status=cleared
       const churchField = CAPABILITY_TO_CHURCH_FIELD[args.capability];
-      const query = { verification_status: 'verified' };
-      if (churchField) query[churchField] = true;
-      const page = await svc.entities.Church.filter(query, { limit: 50, fields: ['name', 'location', 'leader_name', 'leader_email'] });
-      return { count: page.items.length, capability: args.capability, churches: page.items };
+      const churchQuery = { verification_status: 'verified' };
+      if (churchField) churchQuery[churchField] = true;
+      const churchPage = await svc.entities.Church.filter(churchQuery, { limit: 50, fields: ['id', 'name', 'location'] });
+      const churchIds = churchPage.items.map(c => c.id);
+      if (churchIds.length === 0) return { count: 0, capability: args.capability, volunteers: [] };
+
+      // Find users at those churches who are approved, background-cleared, and have the capability
+      const userQuery = {
+        church_id: { $in: churchIds },
+        church_approved: true,
+        background_check_status: 'cleared',
+        volunteer_capabilities: args.capability,
+      };
+      const volunteers = await svc.entities.User.filter(userQuery, { limit: 50, fields: ['id', 'full_name', 'church_id'] });
+      const volunteerList = volunteers.items || volunteers;
+      const churchMap = {};
+      churchPage.items.forEach(c => { churchMap[c.id] = c; });
+      const result = volunteerList.map(v => ({
+        id: v.id,
+        name: v.full_name,
+        church: churchMap[v.church_id]?.name || 'Unknown',
+        location: churchMap[v.church_id]?.location || '',
+      }));
+      return { count: result.length, capability: args.capability, volunteers: result };
     }
 
     case 'find_matching_verified_churches': {
@@ -247,6 +286,19 @@ export async function dispatchTool(toolName, args, ctx) {
         result: 'success',
       });
       return { scheduled: true, follow_up_time: followUpTime };
+    }
+
+    case 'create_church_connect_request': {
+      // Create a church-to-church connection request
+      const ccRequest = await svc.entities.ChurchConnectRequest.create({
+        journey_id: args.journey_id,
+        requesting_church_id: args.requesting_church_id,
+        responding_church_id: args.responding_church_id,
+        need_type: args.need_type,
+        details: args.details || '',
+        status: 'open',
+      });
+      return { request_id: ccRequest.id, status: ccRequest.status };
     }
 
     case 'write_audit_event': {

@@ -11,86 +11,90 @@ export default async function(req) {
       return Response.json({ error: 'Forbidden — admin only' }, { status: 403 });
     }
 
+    const svc = base44.asServiceRole;
     const timeoutMinutes = parseInt(secrets.get('PRAYER_ASSIGNMENT_TIMEOUT_MINUTES') || '720', 10);
     const now = new Date();
     const results = [];
 
     // Find all accepted assignments that have passed their due_at
-    const expiredPage = await base44.asServiceRole.entities.PrayerAssignment.filter({
+    const expiredPage = await svc.entities.PrayerAssignment.filter({
       status: 'accepted',
       due_at: { $lt: now.toISOString() }
     }, { sort: '-created_date', limit: 100 });
 
     for (const assignment of expiredPage.items) {
       try {
-        // Fetch the journey to find the church for default warrior lookup
-        const journey = await base44.asServiceRole.entities.PrayerJourney.get(assignment.journey_id);
+        const journey = await svc.entities.PrayerJourney.get(assignment.journey_id);
         if (!journey) continue;
 
         // Mark the expired assignment
-        await base44.asServiceRole.entities.PrayerAssignment.update(assignment.id, {
+        await svc.entities.PrayerAssignment.update(assignment.id, {
           status: 'timeout_reassigned'
         });
 
-        // Find the default prayer warrior for this church
-        // Look for users with church_id matching the journey's matched church or requester's church
-        // Default warrior = a verified prayer warrior in the church pool
-        const churchId = journey.matched_church_id;
+        // Find the default prayer warrior: look for a User with is_default_prayer_warrior=true
+        // belonging to the journey's matched church
         let defaultWarriorId = null;
+        const churchId = journey.matched_church_id;
 
         if (churchId) {
-          // Find an existing default warrior assignment pattern or use church team
-          const defaultWarriors = await base44.asServiceRole.entities.PrayerAssignment.filter({
-            journey_id: assignment.journey_id,
-            is_default_warrior: true
-          }, { sort: '-created_date', limit: 1 });
-
-          if (defaultWarriors.items.length > 0) {
-            defaultWarriorId = defaultWarriors.items[0].assigned_warrior_id;
+          const warriors = await svc.entities.User.filter({
+            church_id: churchId,
+            is_default_prayer_warrior: true,
+            church_approved: true,
+          });
+          const warriorList = Array.isArray(warriors) ? warriors : (warriors.items || []);
+          if (warriorList.length > 0) {
+            defaultWarriorId = warriorList[0].id;
           }
         }
 
         // Create the fallback assignment
-        const fallbackAssignment = await base44.asServiceRole.entities.PrayerAssignment.create({
+        const fallbackAssignment = await svc.entities.PrayerAssignment.create({
           journey_id: assignment.journey_id,
-          status: 'accepted',
+          status: defaultWarriorId ? 'accepted' : 'open',
           assigned_warrior_id: defaultWarriorId,
-          accepted_at: now.toISOString(),
+          accepted_at: defaultWarriorId ? now.toISOString() : undefined,
           due_at: new Date(now.getTime() + timeoutMinutes * 60 * 1000).toISOString(),
           is_default_warrior: true
         });
 
-        // Ensure only one active assignment — mark any other accepted assignments for this journey as timeout_reassigned
-        const activeAssignments = await base44.asServiceRole.entities.PrayerAssignment.filter({
+        // Ensure only one active assignment — mark any other accepted assignments as timeout_reassigned
+        const activeAssignments = await svc.entities.PrayerAssignment.filter({
           journey_id: assignment.journey_id,
           status: 'accepted'
-        });
-        for (const a of activeAssignments.items) {
+        }, { limit: 50 });
+        const activeList = Array.isArray(activeAssignments) ? activeAssignments : (activeAssignments.items || []);
+        for (const a of activeList) {
           if (a.id !== fallbackAssignment.id) {
-            await base44.asServiceRole.entities.PrayerAssignment.update(a.id, {
+            await svc.entities.PrayerAssignment.update(a.id, {
               status: 'timeout_reassigned'
             });
           }
         }
 
         // Update journey status
-        await base44.asServiceRole.entities.PrayerJourney.update(assignment.journey_id, {
+        await svc.entities.PrayerJourney.update(assignment.journey_id, {
           status: 'open'
         });
 
         // Write audit event
-        const run = await base44.asServiceRole.entities.AgentRun.create({
+        const run = await svc.entities.AgentRun.create({
           journey_id: assignment.journey_id,
           goal: 'Prayer assignment timeout — fallback reassignment',
           status: 'completed',
           safety_level: journey.safety_level || 'normal',
-          summary: `Prayer warrior timed out. Reassigned to default warrior.`
+          summary: defaultWarriorId
+            ? 'Prayer warrior timed out. Reassigned to default warrior.'
+            : 'Prayer warrior timed out. Returned to open pool (no default warrior configured).'
         });
 
-        await base44.asServiceRole.entities.AgentAction.create({
+        await svc.entities.AgentAction.create({
           run_id: run.id,
           action_type: 'prayer_assignment_timeout',
-          description: 'Prayer assignment timed out — reassigned to default warrior',
+          description: defaultWarriorId
+            ? 'Prayer assignment timed out — reassigned to default warrior'
+            : 'Prayer assignment timed out — returned to open pool',
           details: JSON.stringify({
             original_warrior_id: assignment.assigned_warrior_id,
             accepted_at: assignment.accepted_at,

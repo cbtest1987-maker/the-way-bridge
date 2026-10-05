@@ -58,17 +58,22 @@ export default function PrayerTeamQueue() {
 
   const iWillPray = async (assignment) => {
     setSaving(true);
-    const now = new Date();
-    const config = await base44.functions.invoke('getPrayerConfig').catch(() => ({}));
-    const timeoutMinutes = config?.timeout_minutes || 720;
-    const due = new Date(now.getTime() + timeoutMinutes * 60 * 1000);
-    await base44.entities.PrayerAssignment.update(assignment.id, {
-      status: "accepted",
-      assigned_warrior_id: user.id,
-      accepted_at: now.toISOString(),
-      due_at: due.toISOString(),
-      warrior_note: note || undefined
-    });
+    try {
+      const res = await base44.functions.invoke('acceptPrayerAssignment', {
+        assignment_id: assignment.id,
+        note: note || undefined,
+      });
+      if (res.data?.error) {
+        alert(res.data.error);
+        setSaving(false);
+        return;
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.error || err?.message || 'Failed to accept prayer request.';
+      alert(msg);
+      setSaving(false);
+      return;
+    }
     setNote("");
     setSaving(false);
     load();

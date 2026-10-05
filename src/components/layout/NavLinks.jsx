@@ -8,6 +8,7 @@ export default function NavLinks({ user, currentPath, mobile = false }) {
   if (roles.includes("prayer_warrior") || user?.app_role === "prayer_warrior" || user?.app_role === "prayer_team") links.push({ to: "/prayer-team", label: "Prayer Queue" });
   if (roles.includes("care_volunteer") || user?.app_role === "care_volunteer" || user?.app_role === "volunteer") links.push({ to: "/volunteer", label: "Volunteer Queue" });
   if (user?.app_role === "church_admin") links.push({ to: "/church-dashboard", label: "Church Dashboard" });
+  if (roles.includes("church_connect_coordinator") || user?.app_role === "church_connect_coordinator" || user?.role === "admin") links.push({ to: "/church-connect", label: "Church Connect" });
   if (user?.app_role === "church_admin" || user?.role === "admin") links.push({ to: "/prayer-pool", label: "Prayer Pool" });
   if (user?.care_safety_reviewer || user?.role === "admin") links.push({ to: "/care-safety-review", label: "Care & Safety" });
   if (user?.role === "admin") links.push({ to: "/admin", label: "Admin" });

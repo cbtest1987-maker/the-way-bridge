@@ -1,0 +1,57 @@
+{
+  "name": "ChurchConnectRequest",
+  "type": "object",
+  "properties": {
+    "journey_id": {
+      "type": "string",
+      "description": "Parent PrayerJourney"
+    },
+    "requesting_church_id": {
+      "type": "string",
+      "description": "Church that initiated the connection request"
+    },
+    "responding_church_id": {
+      "type": "string",
+      "description": "Church being asked to help"
+    },
+    "need_type": {
+      "type": "string",
+      "enum": [
+        "space",
+        "building",
+        "church_planting",
+        "fundraising",
+        "disaster",
+        "resources"
+      ]
+    },
+    "details": {
+      "type": "string",
+      "description": "What the requesting church needs"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "responded",
+        "accepted",
+        "declined",
+        "closed"
+      ],
+      "default": "open"
+    },
+    "response_message": {
+      "type": "string",
+      "description": "Message from responding church"
+    },
+    "responded_by_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "journey_id",
+    "requesting_church_id",
+    "responding_church_id",
+    "need_type"
+  ]
+}
