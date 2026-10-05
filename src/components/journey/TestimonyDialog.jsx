@@ -65,16 +65,16 @@ export default function TestimonyDialog({ journey, open, onClose }) {
                   onClick={() => setShareName(true)}
                   className={`flex-1 rounded-xl border p-3 text-left transition ${shareName ? "border-[#3D6E64] bg-[#EAF2EE]" : "border-[#555555] bg-[#444444]"}`}
                 >
-                  <p className="text-sm font-medium text-white">Share with my name</p>
-                  <p className="text-xs text-white">{journey?.display_name || "Your name"} will be shown</p>
+                  <p className={`text-sm font-medium ${shareName ? "text-[#2B2620]" : "text-white"}`}>Share with my name</p>
+                  <p className={`text-xs ${shareName ? "text-[#5C5648]" : "text-white"}`}>{journey?.display_name || "Your name"} will be shown</p>
                 </button>
                 <button
                   type="button"
                   onClick={() => setShareName(false)}
                   className={`flex-1 rounded-xl border p-3 text-left transition ${!shareName ? "border-[#3D6E64] bg-[#EAF2EE]" : "border-[#555555] bg-[#444444]"}`}
                 >
-                  <p className="text-sm font-medium text-white">Share anonymously</p>
-                  <p className="text-xs text-white">Your name will be hidden</p>
+                  <p className={`text-sm font-medium ${!shareName ? "text-[#2B2620]" : "text-white"}`}>Share anonymously</p>
+                  <p className={`text-xs ${!shareName ? "text-[#5C5648]" : "text-white"}`}>Your name will be hidden</p>
                 </button>
               </div>
             </div>
