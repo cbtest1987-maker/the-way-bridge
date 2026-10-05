@@ -12,6 +12,7 @@ export default function CareSafetyReview() {
   const { user } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [journeysById, setJourneysById] = useState({});
+  const [tasksByJourney, setTasksByJourney] = useState({});
   const [notes, setNotes] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(null);
@@ -23,9 +24,20 @@ export default function CareSafetyReview() {
 
     const journeyIds = [...new Set(list.map(r => r.journey_id))];
     const journeys = await Promise.all(journeyIds.map(id => base44.entities.PrayerJourney.get(id)));
-    const map = {};
-    journeyIds.forEach((id, i) => (map[id] = journeys[i]));
-    setJourneysById(map);
+    const jMap = {};
+    journeyIds.forEach((id, i) => (jMap[id] = journeys[i]));
+    setJourneysById(jMap);
+
+    // Load care tasks for each journey
+    const taskResults = await Promise.all(
+      journeyIds.map(id => base44.entities.CareTask.filter({ journey_id: id }, { sort: "-created_date", limit: 50 }))
+    );
+    const tMap = {};
+    journeyIds.forEach((id, i) => {
+      const page = taskResults[i];
+      tMap[id] = page.items || page;
+    });
+    setTasksByJourney(tMap);
 
     // SOD: exclude the reviewer's own requests
     const ownIds = getOwnJourneyIds(journeys, user?.id);
@@ -98,6 +110,22 @@ export default function CareSafetyReview() {
               <p className="text-xs text-[#5B5648] mb-3">
                 {review.automation_paused ? "⚠ Automation is paused for this request." : "Automation resumed."}
               </p>
+              {(tasksByJourney[review.journey_id] || []).length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs font-medium text-[#5B5648] mb-2">Critical Tasks ({tasksByJourney[review.journey_id].length})</p>
+                  <div className="space-y-1.5">
+                    {tasksByJourney[review.journey_id].map(task => (
+                      <div key={task.id} className="flex items-center justify-between bg-[#FBF8F3] rounded-lg px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={task.status} />
+                          <span className="text-xs text-[#2B2620] capitalize">{task.type.replace(/_/g, " ")}</span>
+                        </div>
+                        <p className="text-xs text-[#8A8375] max-w-[60%] truncate">{task.details || "—"}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <Textarea
                 placeholder="Reviewer notes..."
                 className="min-h-[60px] mb-3"
