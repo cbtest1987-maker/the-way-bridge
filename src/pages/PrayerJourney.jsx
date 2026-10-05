@@ -55,12 +55,18 @@ export default function PrayerJourney() {
     setAssignmentsByJourney(previous => cursor ? { ...previous, ...aMap } : aMap);
     setTasksByJourney(previous => cursor ? { ...previous, ...tMap } : tMap);
 
-    // Fetch volunteer info for accepted tasks
+    // Fetch volunteer contact info for accepted tasks via backend function
     const acceptedTasks = Object.values(tMap).flat().filter(t => t.status === "accepted" && t.assigned_volunteer_id);
     const volunteerIds = [...new Set(acceptedTasks.map(t => t.assigned_volunteer_id))];
-    const volunteerUsers = await Promise.all(volunteerIds.map(id => base44.entities.User.get(id).catch(() => null)));
+    const volunteerResults = await Promise.all(
+      volunteerIds.map(id =>
+        base44.functions.invoke('getVolunteerContact', { task_id: acceptedTasks.find(t => t.assigned_volunteer_id === id).id })
+          .then(res => ({ id, data: res.data }))
+          .catch(() => ({ id, data: null }))
+      )
+    );
     const vMap = {};
-    volunteerIds.forEach((id, i) => { if (volunteerUsers[i]) vMap[id] = volunteerUsers[i]; });
+    volunteerResults.forEach(({ id, data }) => { if (data && !data.error) vMap[id] = data; });
     setVolunteersByTask(previous => cursor ? { ...previous, ...vMap } : vMap);
 
     setLoading(false);
