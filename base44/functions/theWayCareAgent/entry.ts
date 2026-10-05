@@ -3,49 +3,15 @@ import { secrets } from 'base44:runtime';
 import { TOOL_SCHEMAS, dispatchTool } from './tools.ts';
 
 const GLOO_ENDPOINT = 'https://platform.ai.gloo.com/ai/v2/guarded/responses';
-const GLOO_TOKEN_ENDPOINT = 'https://platform.ai.gloo.com/oauth2/token';
 const GLOO_MODEL = 'gloo-anthropic-claude-sonnet-4.6';
 const MAX_ITERATIONS = 12;
 
-// In-memory token cache (survives within a single warm function instance)
-let cachedToken = null;
-let tokenExpiresAt = 0;
-
-async function getAccessToken() {
-  // Return cached token if still valid (with 60s buffer)
-  if (cachedToken && Date.now() < tokenExpiresAt - 60000) {
-    return cachedToken;
+function getAccessToken() {
+  const apiKey = secrets.get('GLOO_API_KEY')?.trim().replace(/^["']|["']$/g, '');
+  if (!apiKey) {
+    throw new Error('GLOO_API_KEY secret is required');
   }
-
-  const clientId = secrets.get('GLOO_CLIENT_ID')?.trim().replace(/^["']|["']$/g, '');
-  const clientSecret = secrets.get('GLOO_CLIENT_SECRET')?.trim().replace(/^["']|["']$/g, '');
-
-  if (!clientId || !clientSecret) {
-    throw new Error('GLOO_CLIENT_ID and GLOO_CLIENT_SECRET secrets are required');
-  }
-
-  const basicAuth = btoa(`${clientId}:${clientSecret}`);
-  const params = new URLSearchParams();
-  params.append('grant_type', 'client_credentials');
-
-  const response = await fetch(GLOO_TOKEN_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${basicAuth}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: params.toString(),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gloo token exchange failed ${response.status}: ${errorText}`);
-  }
-
-  const data = await response.json();
-  cachedToken = data.access_token;
-  tokenExpiresAt = Date.now() + (data.expires_in || 3600) * 1000;
-  return cachedToken;
+  return apiKey;
 }
 
 const SYSTEM_INSTRUCTIONS = `You are "theWay Care Agent", an AI assistant for The Way Bridge platform that connects individuals with local churches for prayer, encouragement, and practical assistance.
