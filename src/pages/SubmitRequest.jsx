@@ -80,6 +80,12 @@ export default function SubmitRequest() {
   const finalize = async () => {
     if (analysis.matched_church_id === undefined && selectedChurchId) {
       await base44.entities.PrayerJourney.update(analysis.journey_id, { matched_church_id: selectedChurchId });
+      // Assign all open care tasks to the selected church so they appear in the volunteer queue
+      const tasks = await base44.entities.CareTask.filter({ journey_id: analysis.journey_id, status: "open" });
+      const taskList = tasks.items || tasks;
+      if (Array.isArray(taskList) && taskList.length > 0) {
+        await base44.entities.CareTask.bulkUpdate(taskList.map(t => ({ id: t.id, church_id: selectedChurchId })));
+      }
     }
     sessionStorage.removeItem("bridge_draft");
     navigate("/journey");
