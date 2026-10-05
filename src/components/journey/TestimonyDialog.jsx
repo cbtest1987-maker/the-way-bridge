@@ -33,21 +33,21 @@ export default function TestimonyDialog({ journey, open, onClose }) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DialogContent className="rounded-3xl max-w-md">
+      <DialogContent className="rounded-3xl max-w-md bg-[#333333] border-[#444444]">
         {submitted ? (
           <div className="text-center py-6">
             <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[#EAF2EE] flex items-center justify-center">
               <Sparkles className="w-6 h-6 text-[#3D6E64]" />
             </div>
-            <p className="font-serif text-lg text-[#2B2620] mb-1">Thank you for sharing!</p>
-            <p className="text-sm text-[#5C5648] mb-5">Your testimony has been submitted and will be reviewed before publishing.</p>
+            <p className="font-serif text-lg text-white mb-1">Thank you for sharing!</p>
+            <p className="text-sm text-white mb-5">Your testimony has been submitted and will be reviewed before publishing.</p>
             <Button onClick={handleClose} className="rounded-full bg-[#3D6E64] hover:bg-[#2F5850]">Close</Button>
           </div>
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle className="font-serif text-xl text-[#2B2620]">Share Your Testimony?</DialogTitle>
-              <DialogDescription className="text-[#5C5648]">
+              <DialogTitle className="font-serif text-xl text-white">Share Your Testimony?</DialogTitle>
+              <DialogDescription className="text-white">
                 Would you like to share how God answered your prayer? Your story can encourage others in the community.
               </DialogDescription>
             </DialogHeader>
@@ -57,31 +57,31 @@ export default function TestimonyDialog({ journey, open, onClose }) {
                 placeholder="Share your testimony..."
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="rounded-xl min-h-[120px]"
+                className="rounded-xl min-h-[120px] bg-[#444444] border-[#555555] text-white placeholder:text-white/60"
               />
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setShareName(true)}
-                  className={`flex-1 rounded-xl border p-3 text-left transition ${shareName ? "border-[#3D6E64] bg-[#EAF2EE]" : "border-[#EFE8DA]"}`}
+                  className={`flex-1 rounded-xl border p-3 text-left transition ${shareName ? "border-[#3D6E64] bg-[#EAF2EE]" : "border-[#555555] bg-[#444444]"}`}
                 >
-                  <p className="text-sm font-medium text-[#2B2620]">Share with my name</p>
-                  <p className="text-xs text-[#5C5648]">{journey?.display_name || "Your name"} will be shown</p>
+                  <p className="text-sm font-medium text-white">Share with my name</p>
+                  <p className="text-xs text-white">{journey?.display_name || "Your name"} will be shown</p>
                 </button>
                 <button
                   type="button"
                   onClick={() => setShareName(false)}
-                  className={`flex-1 rounded-xl border p-3 text-left transition ${!shareName ? "border-[#3D6E64] bg-[#EAF2EE]" : "border-[#EFE8DA]"}`}
+                  className={`flex-1 rounded-xl border p-3 text-left transition ${!shareName ? "border-[#3D6E64] bg-[#EAF2EE]" : "border-[#555555] bg-[#444444]"}`}
                 >
-                  <p className="text-sm font-medium text-[#2B2620]">Share anonymously</p>
-                  <p className="text-xs text-[#5C5648]">Your name will be hidden</p>
+                  <p className="text-sm font-medium text-white">Share anonymously</p>
+                  <p className="text-xs text-white">Your name will be hidden</p>
                 </button>
               </div>
             </div>
 
             <DialogFooter className="flex gap-2">
-              <Button variant="outline" onClick={handleClose} className="rounded-full">Maybe Later</Button>
-              <Button onClick={handleShare} disabled={!content.trim() || saving} className="rounded-full bg-[#3D6E64] hover:bg-[#2F5850]">
+              <Button variant="outline" onClick={handleClose} className="rounded-full text-white border-white/40 hover:bg-white/10">Maybe Later</Button>
+              <Button onClick={handleShare} disabled={!content.trim() || saving} className="rounded-full bg-[#3D6E64] hover:bg-[#2F5850] text-white">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Share Testimony"}
               </Button>
             </DialogFooter>
