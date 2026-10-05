@@ -59,7 +59,9 @@ export default function PrayerTeamQueue() {
   const iWillPray = async (assignment) => {
     setSaving(true);
     const now = new Date();
-    const due = new Date(now.getTime() + 12 * 60 * 60 * 1000);
+    const config = await base44.functions.invoke('getPrayerConfig').catch(() => ({}));
+    const timeoutMinutes = config?.timeout_minutes || 720;
+    const due = new Date(now.getTime() + timeoutMinutes * 60 * 1000);
     await base44.entities.PrayerAssignment.update(assignment.id, {
       status: "accepted",
       assigned_warrior_id: user.id,

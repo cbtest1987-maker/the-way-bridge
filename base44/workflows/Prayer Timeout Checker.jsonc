@@ -1,0 +1,44 @@
+{
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "prayer_timeout_checker",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "check_timeouts": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "checkPrayerTimeouts"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Check prayer timeouts",
+            "description": "Finds expired assignments and reassigns"
+          }
+        }
+      }
+    ]
+  },
+  "name": "Prayer Timeout Checker",
+  "description": "Checks every minute for expired prayer assignments and reassigns them to the default prayer warrior. Timeout duration is configured via PRAYER_ASSIGNMENT_TIMEOUT_MINUTES secret (5 for hackathon, 720 for production).",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "interval",
+      "cron_expression": null,
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": 5,
+      "interval_unit": "minutes",
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  }
+}
