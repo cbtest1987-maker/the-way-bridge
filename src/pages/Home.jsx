@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { HandHeart, HeartHandshake, Church, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import Logo from "@/components/shared/Logo";
+import TestimoniesSection from "@/components/home/TestimoniesSection";
 
 const HERO_IMG = "https://media.base44.com/images/public/6aa22be9a709fe9e7a17a711/93fb0f247_generated_image.png";
 
@@ -104,6 +105,8 @@ export default function Home() {
           />
         </div>
       </section>
+
+      <TestimoniesSection />
     </div>
   );
 }
