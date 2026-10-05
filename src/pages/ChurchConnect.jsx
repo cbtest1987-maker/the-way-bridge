@@ -160,7 +160,7 @@ export default function ChurchConnect() {
                       disabled={saving}
                       onClick={() => respondToRequest(req.id, "accepted")}
                     >
-                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4 mr-1" /> We Can Help</>}
+                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4 mr-1" /> Our Church Can Help</>}
                     </Button>
                     <Button
                       size="sm"
@@ -198,6 +198,11 @@ export default function ChurchConnect() {
                       : `To: ${church?.name || "Unknown Church"}`}
                   </p>
                   <p className="text-sm text-[#5B5648] mb-2">{req.details}</p>
+                  {req.need_type === "ministry_resource" && req.status === "open" && (
+                    <div className="bg-[#EAF2EE] border border-[#BFD9CD] rounded-2xl p-3 mt-2 mb-2">
+                      <p className="text-sm text-[#3D6E64]">A participating church may be able to help. The request has been sent to {church?.name || "the matching church"} through Church Connect.</p>
+                    </div>
+                  )}
                   {req.response_message && (
                     <div className="bg-[#EAF2EE] border border-[#BFD9CD] rounded-2xl p-3 mt-2">
                       <p className="text-xs font-medium text-[#3D6E64] mb-1">Response:</p>
@@ -230,7 +235,8 @@ export default function ChurchConnect() {
                       </div>
                       {purchaseOptions[req.id] && purchaseOptions[req.id].length > 0 && (
                         <div className="space-y-2 mt-3">
-                          <p className="text-xs font-medium text-[#5B5648]">External Purchase Options (affiliate links):</p>
+                          <p className="text-xs font-bold text-amber-700 bg-amber-100 inline-block px-2 py-0.5 rounded">DEMO PURCHASE OPTIONS</p>
+                          <p className="text-xs text-[#8A8375]">External provider — no purchase occurs automatically.</p>
                           {purchaseOptions[req.id].map((opt, i) => (
                             <a
                               key={i}

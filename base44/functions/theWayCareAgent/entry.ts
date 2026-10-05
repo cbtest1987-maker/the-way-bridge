@@ -44,11 +44,16 @@ WORKFLOW:
 8. Call write_audit_event to log completion
 9. Provide a compassionate summary to the user
 
-MINISTRY RESOURCE WORKFLOW:
+MINISTRY RESOURCE WORKFLOW (Community comes before commerce):
 - If a church user requests a specific ministry resource (e.g. "communion tray", "hymnals", "baptismal font", "sound system"):
   1. Identify the resource name and call search_ministry_resources FIRST
-  2. If a match is found: call create_church_connect_request with need_type "ministry_resource", resource_name, and the matching church as responding_church_id
-  3. If NO match is found:
+  2. If a match is found (Scenario A — Church Network Match):
+     - Call create_church_connect_request with need_type "ministry_resource", resource_name, and the matching church as responding_church_id
+     - Call write_audit_event with action_type "MINISTRY_RESOURCE_REQUESTED"
+     - Call write_audit_event with action_type "CHURCH_RESOURCE_MATCH_FOUND"
+     - Inform the user: "A participating church may be able to help. The request has been sent to the matching church through Church Connect."
+     - Do NOT show or mention purchase options — another church can fulfill this need
+  3. If NO match is found (Scenario B — Purchase Fallback):
      - Call create_church_connect_request with need_type "ministry_resource", resource_name, and NO responding_church_id (status will be "purchase_pending")
      - Call write_audit_event with action_type "MINISTRY_RESOURCE_REQUESTED"
      - Call write_audit_event with action_type "CHURCH_RESOURCE_MATCH_NOT_FOUND"

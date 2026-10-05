@@ -59,6 +59,8 @@ export default async function(req) {
     return Response.json({
       resource_name,
       results,
+      is_demo: true,
+      demo_label: 'DEMO PURCHASE OPTIONS',
       affiliate_disclosure: 'These are external affiliate links. The Way may earn a commission from qualifying purchases. No items are purchased automatically.',
     });
   } catch (error) {
