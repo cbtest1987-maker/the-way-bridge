@@ -64,28 +64,59 @@ Call tools in a logical sequence. Do NOT call all tools at once — wait for res
 Always provide a warm, compassionate final message to the user summarizing what was done.`;
 
 async function callGloo(input, accessToken) {
-  const response = await fetch(GLOO_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: GLOO_MODEL,
-      instructions: SYSTEM_INSTRUCTIONS,
-      input: input,
-      tools: TOOL_SCHEMAS,
-      tool_choice: 'auto',
-      parallel_tool_calls: false,
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+  let response;
+  try {
+    response = await fetch(GLOO_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: GLOO_MODEL,
+        instructions: SYSTEM_INSTRUCTIONS,
+        input: input,
+        tools: TOOL_SCHEMAS,
+        tool_choice: 'auto',
+        parallel_tool_calls: false,
+      }),
+      signal: controller.signal,
+    });
+  } catch (fetchErr) {
+    clearTimeout(timeoutId);
+    if (fetchErr.name === 'AbortError') {
+      throw new Error('Gloo API request timed out after 20 seconds');
+    }
+    throw new Error(`Gloo API fetch failed: ${fetchErr.message}`);
+  }
+
+  clearTimeout(timeoutId);
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Gloo API error ${response.status}: ${errorText}`);
+    throw new Error(`Gloo API error ${response.status}: ${errorText.slice(0, 500)}`);
   }
 
-  return await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch (parseErr) {
+    throw new Error(`Gloo API response parse failed: ${parseErr.message}`);
+  }
+
+  if (data.error) {
+    const errStr = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+    throw new Error(`Gloo API returned error: ${errStr.slice(0, 500)}`);
+  }
+
+  if (!Array.isArray(data.output)) {
+    throw new Error(`Gloo API returned non-array output: ${JSON.stringify(data.output || data).slice(0, 500)}`);
+  }
+
+  return data;
 }
 
 function extractMessageText(output) {
@@ -102,8 +133,10 @@ function extractFunctionCalls(output) {
 }
 
 export default async function(req) {
+  let run = null;
+  let base44 = null;
   try {
-    const base44 = createClientFromRequest(req);
+    base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -117,7 +150,7 @@ export default async function(req) {
     const accessToken = await getAccessToken();
 
     // Create AgentRun
-    const run = await base44.asServiceRole.entities.AgentRun.create({
+    run = await base44.asServiceRole.entities.AgentRun.create({
       goal: message,
       status: 'running',
       safety_level: 'normal',
@@ -223,6 +256,20 @@ export default async function(req) {
       status: 'completed',
     });
   } catch (error) {
-    return Response.json({ error: error.message, stack: error.stack }, { status: 500 });
+    const sanitizedError = (error.message || 'Unknown error').slice(0, 500);
+    if (run && base44) {
+      try {
+        await base44.asServiceRole.entities.AgentRun.update(run.id, {
+          status: 'failed',
+          summary: `Agent execution failed: ${sanitizedError}`,
+        });
+      } catch (updateErr) {
+        // Best effort — don't mask the original error
+      }
+    }
+    return Response.json({
+      error: sanitizedError,
+      agent_run_id: run?.id || null,
+    }, { status: 500 });
   }
 }
