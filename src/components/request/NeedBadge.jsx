@@ -1,5 +1,5 @@
 import React from "react";
-import { HandHeart, Car, UtensilsCrossed, Church, Package, Building2, Sprout, HandCoins, LifeBuoy, CheckCircle2, Clock, Loader2 } from "lucide-react";
+import { HandHeart, Car, UtensilsCrossed, Church, Package, Building2, Sprout, HandCoins, LifeBuoy, CheckCircle2, Clock, UserCheck } from "lucide-react";
 
 const ICONS = {
   prayer: HandHeart,
@@ -27,7 +27,7 @@ const LABELS = {
 
 const STATUS_ICONS = {
   open: Clock,
-  accepted: Loader2,
+  accepted: UserCheck,
   completed: CheckCircle2,
   declined: CheckCircle2,
 };
@@ -49,7 +49,7 @@ const STATUS_COLORS = {
 export default function NeedBadge({ type, details, status }) {
   const Icon = ICONS[type] || CheckCircle2;
   const StatusIcon = STATUS_ICONS[status] || Clock;
-  const isSpinning = status === "accepted";
+  const isSpinning = false;
   return (
     <div className="flex items-start gap-3 bg-[#F3EEE1] rounded-2xl p-4">
       <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shrink-0">
