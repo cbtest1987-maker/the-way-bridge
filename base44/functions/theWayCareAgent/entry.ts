@@ -90,7 +90,7 @@ export default async function(req) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
     }
 
-    const apiKey = secrets.get('GLOO_API_KEY');
+    const apiKey = secrets.get('GLOO_API_KEY')?.trim().replace(/^["']|["']$/g, '');
     if (!apiKey) {
       return Response.json({ error: 'GLOO_API_KEY secret is not set' }, { status: 500 });
     }
