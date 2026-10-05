@@ -89,7 +89,15 @@ export default function CareSafetyReview() {
       <p className="text-sm text-[#8A8375] mb-6">Requests requiring human review. Reviewer identity, decision, and timestamp are recorded in the audit trail.</p>
 
       {loading && <p className="text-sm text-[#8A8375]">Loading...</p>}
-      {!loading && reviews.length === 0 && <p className="text-sm text-[#8A8375]">No items awaiting review.</p>}
+      {!loading && reviews.length === 0 && (
+        <div className="bg-[#FBF8F3] rounded-2xl border border-[#EFE8DA] p-5">
+          <p className="text-sm text-[#2B2620] font-medium mb-1">No items available for your review</p>
+          <p className="text-sm text-[#8A8375]">
+            Open review items exist, but they are excluded by Separation of Duties because you submitted those requests yourself.
+            Another care & safety reviewer would see them here.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-4">
         {reviews.map((review) => {
