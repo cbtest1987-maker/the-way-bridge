@@ -116,7 +116,7 @@ export default function PrayerJourney() {
             {tasksByJourney[j.id]?.length > 0 && (
               <div className="space-y-1 mt-2">
                 {tasksByJourney[j.id].map((t) => (
-                  <NeedBadge key={t.id} type={t.type} details={t.details} completed={t.status === "completed"} />
+                  <NeedBadge key={t.id} type={t.type} details={t.details} status={t.status} />
                 ))}
               </div>
             )}
