@@ -7,7 +7,8 @@ import StatusBadge from "@/components/shared/StatusBadge";
 import NeedBadge from "@/components/request/NeedBadge";
 import RequestHistory from "@/components/journey/RequestHistory";
 import TestimonyDialog from "@/components/journey/TestimonyDialog";
-import { HandHeart, HeartHandshake, RefreshCw, CheckCircle2, LifeBuoy } from "lucide-react";
+import { HandHeart, HeartHandshake, RefreshCw, CheckCircle2, LifeBuoy, MessageCircle } from "lucide-react";
+import VolunteerConnectDialog from "@/components/journey/VolunteerConnectDialog";
 
 export default function PrayerJourney() {
   const { user } = useAuth();
@@ -18,6 +19,8 @@ export default function PrayerJourney() {
   const [showAll, setShowAll] = useState(false);
   const [next, setNext] = useState(null);
   const [testimonyJourney, setTestimonyJourney] = useState(null);
+  const [volunteersByTask, setVolunteersByTask] = useState({});
+  const [connectTaskId, setConnectTaskId] = useState(null);
   const allRequests = user?.role === "admin" && showAll;
 
   const load = useCallback(async (cursor = null) => {
@@ -51,6 +54,15 @@ export default function PrayerJourney() {
     }
     setAssignmentsByJourney(previous => cursor ? { ...previous, ...aMap } : aMap);
     setTasksByJourney(previous => cursor ? { ...previous, ...tMap } : tMap);
+
+    // Fetch volunteer info for accepted tasks
+    const acceptedTasks = Object.values(tMap).flat().filter(t => t.status === "accepted" && t.assigned_volunteer_id);
+    const volunteerIds = [...new Set(acceptedTasks.map(t => t.assigned_volunteer_id))];
+    const volunteerUsers = await Promise.all(volunteerIds.map(id => base44.entities.User.get(id).catch(() => null)));
+    const vMap = {};
+    volunteerIds.forEach((id, i) => { if (volunteerUsers[i]) vMap[id] = volunteerUsers[i]; });
+    setVolunteersByTask(previous => cursor ? { ...previous, ...vMap } : vMap);
+
     setLoading(false);
   }, [user, allRequests]);
 
@@ -116,7 +128,19 @@ export default function PrayerJourney() {
             {tasksByJourney[j.id]?.length > 0 && (
               <div className="space-y-1 mt-2">
                 {tasksByJourney[j.id].map((t) => (
-                  <NeedBadge key={t.id} type={t.type} details={t.details} status={t.status} />
+                  <div key={t.id}>
+                    <NeedBadge type={t.type} details={t.details} status={t.status} />
+                    {t.status === "accepted" && volunteersByTask[t.assigned_volunteer_id] && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full mt-1 ml-1 text-xs"
+                        onClick={() => setConnectTaskId(t.id)}
+                      >
+                        <MessageCircle className="w-3 h-3 mr-1" /> Connect with volunteer
+                      </Button>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
@@ -186,6 +210,17 @@ export default function PrayerJourney() {
           onClose={() => setTestimonyJourney(null)}
         />
       )}
+      {connectTaskId && (() => {
+        const task = Object.values(tasksByJourney).flat().find(t => t.id === connectTaskId);
+        const volunteer = task ? volunteersByTask[task.assigned_volunteer_id] : null;
+        return (
+          <VolunteerConnectDialog
+            volunteer={volunteer}
+            open={!!connectTaskId}
+            onClose={() => setConnectTaskId(null)}
+          />
+        );
+      })()}
     </div>
   );
 }
