@@ -29,17 +29,26 @@ export default function PrayerJourney() {
     setJourneys(previous => cursor ? [...previous, ...list] : list);
     setNext(page.has_more ? page.next_cursor : null);
 
-    const [allAssignments, allTasks] = await Promise.all([
-      Promise.all(list.map(j => base44.entities.PrayerAssignment.filter({ journey_id: j.id }, "-created_date"))),
-      Promise.all(list.map(j => base44.entities.CareTask.filter({ journey_id: j.id }, "-created_date")))
-    ]);
+    const journeyIds = list.map(j => j.id);
 
     const aMap = {};
     const tMap = {};
-    list.forEach((j, i) => {
-      aMap[j.id] = allAssignments[i];
-      tMap[j.id] = allTasks[i];
-    });
+    if (journeyIds.length > 0) {
+      const [aPage, tPage] = await Promise.all([
+        base44.entities.PrayerAssignment.filter({ journey_id: { $in: journeyIds } }, { sort: "-created_date", limit: 200 }),
+        base44.entities.CareTask.filter({ journey_id: { $in: journeyIds } }, { sort: "-created_date", limit: 200 })
+      ]);
+      const aItems = aPage.items || aPage;
+      const tItems = tPage.items || tPage;
+      aItems.forEach(a => {
+        if (!aMap[a.journey_id]) aMap[a.journey_id] = [];
+        aMap[a.journey_id].push(a);
+      });
+      tItems.forEach(t => {
+        if (!tMap[t.journey_id]) tMap[t.journey_id] = [];
+        tMap[t.journey_id].push(t);
+      });
+    }
     setAssignmentsByJourney(previous => cursor ? { ...previous, ...aMap } : aMap);
     setTasksByJourney(previous => cursor ? { ...previous, ...tMap } : tMap);
     setLoading(false);
