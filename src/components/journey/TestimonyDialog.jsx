@@ -40,14 +40,14 @@ export default function TestimonyDialog({ journey, open, onClose }) {
               <Sparkles className="w-6 h-6 text-[#3D6E64]" />
             </div>
             <p className="font-serif text-lg text-[#2B2620] mb-1">Thank you for sharing!</p>
-            <p className="text-sm text-[#8A8375] mb-5">Your testimony has been submitted and will be reviewed before publishing.</p>
+            <p className="text-sm text-[#5C5648] mb-5">Your testimony has been submitted and will be reviewed before publishing.</p>
             <Button onClick={handleClose} className="rounded-full bg-[#3D6E64] hover:bg-[#2F5850]">Close</Button>
           </div>
         ) : (
           <>
             <DialogHeader>
               <DialogTitle className="font-serif text-xl text-[#2B2620]">Share Your Testimony?</DialogTitle>
-              <DialogDescription className="text-[#8A8375]">
+              <DialogDescription className="text-[#5C5648]">
                 Would you like to share how God answered your prayer? Your story can encourage others in the community.
               </DialogDescription>
             </DialogHeader>
@@ -66,7 +66,7 @@ export default function TestimonyDialog({ journey, open, onClose }) {
                   className={`flex-1 rounded-xl border p-3 text-left transition ${shareName ? "border-[#3D6E64] bg-[#EAF2EE]" : "border-[#EFE8DA]"}`}
                 >
                   <p className="text-sm font-medium text-[#2B2620]">Share with my name</p>
-                  <p className="text-xs text-[#8A8375]">{journey?.display_name || "Your name"} will be shown</p>
+                  <p className="text-xs text-[#5C5648]">{journey?.display_name || "Your name"} will be shown</p>
                 </button>
                 <button
                   type="button"
@@ -74,7 +74,7 @@ export default function TestimonyDialog({ journey, open, onClose }) {
                   className={`flex-1 rounded-xl border p-3 text-left transition ${!shareName ? "border-[#3D6E64] bg-[#EAF2EE]" : "border-[#EFE8DA]"}`}
                 >
                   <p className="text-sm font-medium text-[#2B2620]">Share anonymously</p>
-                  <p className="text-xs text-[#8A8375]">Your name will be hidden</p>
+                  <p className="text-xs text-[#5C5648]">Your name will be hidden</p>
                 </button>
               </div>
             </div>
