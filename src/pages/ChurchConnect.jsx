@@ -24,8 +24,8 @@ export default function ChurchConnect() {
     setLoading(true);
 
     const [inReq, outReq] = await Promise.all([
-      base44.entities.ChurchConnectRequest.filter({ responding_church_id: user.church_id, status: "open" }, "-created_date"),
-      base44.entities.ChurchConnectRequest.filter({ requesting_church_id: user.church_id }, "-created_date"),
+      base44.entities.ChurchConnectRequest.filter({ responding_church_id: user.church_id, status: "open" }, { sort: "-created_date" }),
+      base44.entities.ChurchConnectRequest.filter({ requesting_church_id: user.church_id }, { sort: "-created_date" }),
     ]);
 
     const inList = Array.isArray(inReq) ? inReq : (inReq.items || []);

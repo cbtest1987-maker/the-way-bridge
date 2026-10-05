@@ -10,8 +10,9 @@ export default function AdminVerification() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const list = await base44.entities.Church.list("-created_date");
-    setChurches(list);
+    const list = await base44.entities.Church.list({ sort: "-created_date" });
+    const items = Array.isArray(list) ? list : (list.items || []);
+    setChurches(items);
     setLoading(false);
   }, []);
 

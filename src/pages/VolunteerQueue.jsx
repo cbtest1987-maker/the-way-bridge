@@ -16,9 +16,10 @@ export default function VolunteerQueue() {
   const load = useCallback(async () => {
     if (!user?.church_id) return;
     setLoading(true);
-    const list = await base44.entities.CareTask.filter({ church_id: user.church_id, status: "open" }, "-created_date");
-    setTasks(list);
-    const journeyIds = [...new Set(list.map(t => t.journey_id))];
+    const list = await base44.entities.CareTask.filter({ church_id: user.church_id, status: "open" }, { sort: "-created_date" });
+    const items = Array.isArray(list) ? list : (list.items || []);
+    setTasks(items);
+    const journeyIds = [...new Set(items.map(t => t.journey_id))];
     const journeys = await Promise.all(journeyIds.map(id => base44.entities.PrayerJourney.get(id)));
     const map = {};
     journeyIds.forEach((id, i) => (map[id] = journeys[i]));
@@ -26,7 +27,7 @@ export default function VolunteerQueue() {
 
     // SOD: exclude the volunteer's own requests from the queue
     const ownJourneyIds = getOwnJourneyIds(journeys, user.id);
-    setTasks(list.filter(t => !ownJourneyIds.has(t.journey_id)));
+    setTasks(items.filter(t => !ownJourneyIds.has(t.journey_id)));
     setLoading(false);
   }, [user]);
 
