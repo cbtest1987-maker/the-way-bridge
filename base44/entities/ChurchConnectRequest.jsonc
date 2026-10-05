@@ -12,7 +12,7 @@
     },
     "responding_church_id": {
       "type": "string",
-      "description": "Church being asked to help"
+      "description": "Church being asked to help (optional for purchase-pending requests)"
     },
     "need_type": {
       "type": "string",
@@ -22,8 +22,13 @@
         "church_planting",
         "fundraising",
         "disaster",
-        "resources"
+        "resources",
+        "ministry_resource"
       ]
+    },
+    "resource_name": {
+      "type": "string",
+      "description": "The specific ministry resource requested (e.g. Communion Tray)"
     },
     "details": {
       "type": "string",
@@ -36,7 +41,8 @@
         "responded",
         "accepted",
         "declined",
-        "closed"
+        "closed",
+        "purchase_pending"
       ],
       "default": "open"
     },
@@ -46,12 +52,15 @@
     },
     "responded_by_id": {
       "type": "string"
+    },
+    "purchase_options_requested": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [
     "journey_id",
     "requesting_church_id",
-    "responding_church_id",
     "need_type"
   ]
 }

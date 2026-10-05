@@ -60,6 +60,13 @@
       "type": "boolean",
       "default": false
     },
+    "available_resources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ministry resources available for sharing, donation, or lending (e.g. Communion Tray, Hymnals, Baptismal Font)"
+    },
     "safeguarding_contact": {
       "type": "string"
     },

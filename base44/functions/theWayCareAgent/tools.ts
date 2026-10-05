@@ -144,17 +144,32 @@ export const TOOL_SCHEMAS = [
     type: 'function',
     function: {
       name: 'create_church_connect_request',
-      description: 'Create a church-to-church connection request when a church needs space, building, or resource support from another church. Requires both church IDs and the need type.',
+      description: 'Create a church-to-church connection request when a church needs space, building, or resource support from another church. For ministry resources, call search_ministry_resources first. If no matching church is found, omit responding_church_id to create a purchase-pending request.',
       parameters: {
         type: 'object',
         properties: {
           journey_id: { type: 'string', description: 'The ID of the PrayerJourney' },
-          requesting_church_id: { type: 'string', description: 'The church requesting help' },
-          responding_church_id: { type: 'string', description: 'The church being asked to help' },
-          need_type: { type: 'string', enum: ['space', 'building', 'church_planting', 'fundraising', 'disaster', 'resources'], description: 'The type of support needed' },
+          requesting_church_id: { type: 'string', description: 'The church requesting help (omit to use the user\'s church)' },
+          responding_church_id: { type: 'string', description: 'The church being asked to help (omit if no match found)' },
+          need_type: { type: 'string', enum: ['space', 'building', 'church_planting', 'fundraising', 'disaster', 'resources', 'ministry_resource'], description: 'The type of support needed' },
+          resource_name: { type: 'string', description: 'The specific ministry resource requested (e.g. Communion Tray). Include for ministry_resource need type.' },
           details: { type: 'string', description: 'Specific details about what is needed' },
         },
-        required: ['journey_id', 'requesting_church_id', 'responding_church_id', 'need_type'],
+        required: ['journey_id', 'need_type'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'search_ministry_resources',
+      description: 'Search participating churches for a specific ministry resource (e.g. Communion Tray, Hymnals, Baptismal Font). Returns matching churches that can provide, share, donate, or lend the resource. Call this BEFORE creating a church connect request for ministry resources.',
+      parameters: {
+        type: 'object',
+        properties: {
+          resource_name: { type: 'string', description: 'The name of the ministry resource needed (e.g. "Communion Tray", "Hymnals", "Baptismal Font")' },
+        },
+        required: ['resource_name'],
       },
     },
   },
@@ -289,16 +304,42 @@ export async function dispatchTool(toolName, args, ctx) {
     }
 
     case 'create_church_connect_request': {
-      // Create a church-to-church connection request
+      const hasRespondingChurch = !!args.responding_church_id;
+      const requestingChurchId = args.requesting_church_id || user.church_id;
+      if (!requestingChurchId) {
+        return { error: 'Requesting church ID is required (user has no church_id)' };
+      }
       const ccRequest = await svc.entities.ChurchConnectRequest.create({
         journey_id: args.journey_id,
-        requesting_church_id: args.requesting_church_id,
-        responding_church_id: args.responding_church_id,
+        requesting_church_id: requestingChurchId,
+        responding_church_id: args.responding_church_id || undefined,
         need_type: args.need_type,
+        resource_name: args.resource_name,
         details: args.details || '',
-        status: 'open',
+        status: hasRespondingChurch ? 'open' : 'purchase_pending',
       });
       return { request_id: ccRequest.id, status: ccRequest.status };
+    }
+
+    case 'search_ministry_resources': {
+      const resourceName = (args.resource_name || '').toLowerCase().trim();
+      const page = await svc.entities.Church.filter(
+        { verification_status: 'verified', available_resources: { $regex: resourceName, $options: 'i' } },
+        { limit: 50, fields: ['id', 'name', 'location', 'available_resources', 'leader_name', 'leader_email'] }
+      );
+      const churches = page.items || page;
+      return {
+        count: churches.length,
+        resource_name: args.resource_name,
+        matches: churches.map(c => ({
+          church_id: c.id,
+          name: c.name,
+          location: c.location,
+          available_resources: c.available_resources || [],
+          leader_name: c.leader_name,
+          leader_email: c.leader_email,
+        })),
+      };
     }
 
     case 'write_audit_event': {

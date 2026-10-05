@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import StatusBadge from "@/components/shared/StatusBadge";
-import { Church, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Church, Loader2, CheckCircle2, XCircle, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function ChurchConnect() {
@@ -16,6 +16,8 @@ export default function ChurchConnect() {
   const [responseText, setResponseText] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [purchaseLoading, setPurchaseLoading] = useState({});
+  const [purchaseOptions, setPurchaseOptions] = useState({});
 
   const load = useCallback(async () => {
     if (!user?.church_id) return;
@@ -67,6 +69,29 @@ export default function ChurchConnect() {
       load();
     } catch (err) {
       alert(err?.message || "Failed to respond.");
+    }
+    setSaving(false);
+  };
+
+  const handleViewPurchaseOptions = async (requestId, resourceName) => {
+    setPurchaseLoading(prev => ({ ...prev, [requestId]: true }));
+    try {
+      const res = await base44.functions.invoke("searchPurchaseOptions", { resource_name: resourceName });
+      setPurchaseOptions(prev => ({ ...prev, [requestId]: res.data?.results || [] }));
+      await base44.entities.ChurchConnectRequest.update(requestId, { purchase_options_requested: true });
+    } catch (err) {
+      alert(err?.message || "Failed to load purchase options.");
+    }
+    setPurchaseLoading(prev => ({ ...prev, [requestId]: false }));
+  };
+
+  const handleNoThanks = async (requestId) => {
+    setSaving(true);
+    try {
+      await base44.entities.ChurchConnectRequest.update(requestId, { status: "closed" });
+      load();
+    } catch (err) {
+      alert(err?.message || "Failed to update request.");
     }
     setSaving(false);
   };
@@ -168,13 +193,59 @@ export default function ChurchConnect() {
                     <span className="text-xs px-2 py-0.5 rounded-full bg-[#EAF2EE] text-[#3D6E64] capitalize">{req.need_type}</span>
                   </div>
                   <p className="text-sm font-medium text-[#2B2620] mb-1">
-                    To: {church?.name || "Unknown Church"}
+                    {req.status === "purchase_pending" && req.resource_name
+                      ? `Resource: ${req.resource_name}`
+                      : `To: ${church?.name || "Unknown Church"}`}
                   </p>
                   <p className="text-sm text-[#5B5648] mb-2">{req.details}</p>
                   {req.response_message && (
                     <div className="bg-[#EAF2EE] border border-[#BFD9CD] rounded-2xl p-3 mt-2">
                       <p className="text-xs font-medium text-[#3D6E64] mb-1">Response:</p>
                       <p className="text-sm text-[#2B2620]">{req.response_message}</p>
+                    </div>
+                  )}
+                  {req.status === "purchase_pending" && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mt-3">
+                      <p className="text-sm text-amber-800 mb-3">
+                        No participating church currently has this item available. Would you like to see purchase options?
+                      </p>
+                      <div className="flex gap-2 mb-3">
+                        <Button
+                          size="sm"
+                          className="rounded-full bg-[#3D6E64] hover:bg-[#2F5850]"
+                          disabled={purchaseLoading[req.id]}
+                          onClick={() => handleViewPurchaseOptions(req.id, req.resource_name)}
+                        >
+                          {purchaseLoading[req.id] ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ShoppingCart className="w-4 h-4 mr-1" /> View Purchase Options</>}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="rounded-full"
+                          disabled={saving}
+                          onClick={() => handleNoThanks(req.id)}
+                        >
+                          No Thanks
+                        </Button>
+                      </div>
+                      {purchaseOptions[req.id] && purchaseOptions[req.id].length > 0 && (
+                        <div className="space-y-2 mt-3">
+                          <p className="text-xs font-medium text-[#5B5648]">External Purchase Options (affiliate links):</p>
+                          {purchaseOptions[req.id].map((opt, i) => (
+                            <a
+                              key={i}
+                              href={opt.url}
+                              target="_blank"
+                              rel="noopener noreferrer sponsored"
+                              className="block bg-white border border-[#EFE8DA] rounded-xl p-3 hover:border-[#BFD9CD] transition-colors"
+                            >
+                              <p className="text-sm font-medium text-[#2B2620]">{opt.title}</p>
+                              <p className="text-xs text-[#8A8375]">{opt.price}</p>
+                              <p className="text-xs text-[#3D6E64] mt-1">View on Amazon →</p>
+                            </a>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
