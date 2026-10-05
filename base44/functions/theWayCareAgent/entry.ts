@@ -3,8 +3,50 @@ import { secrets } from 'base44:runtime';
 import { TOOL_SCHEMAS, dispatchTool } from './tools.ts';
 
 const GLOO_ENDPOINT = 'https://platform.ai.gloo.com/ai/v2/guarded/responses';
+const GLOO_TOKEN_ENDPOINT = 'https://platform.ai.gloo.com/oauth2/token';
 const GLOO_MODEL = 'gloo-anthropic-claude-sonnet-4.6';
 const MAX_ITERATIONS = 12;
+
+// In-memory token cache (survives within a single warm function instance)
+let cachedToken = null;
+let tokenExpiresAt = 0;
+
+async function getAccessToken() {
+  // Return cached token if still valid (with 60s buffer)
+  if (cachedToken && Date.now() < tokenExpiresAt - 60000) {
+    return cachedToken;
+  }
+
+  const clientId = secrets.get('GLOO_CLIENT_ID')?.trim().replace(/^["']|["']$/g, '');
+  const clientSecret = secrets.get('GLOO_CLIENT_SECRET')?.trim().replace(/^["']|["']$/g, '');
+
+  if (!clientId || !clientSecret) {
+    throw new Error('GLOO_CLIENT_ID and GLOO_CLIENT_SECRET secrets are required');
+  }
+
+  const basicAuth = btoa(`${clientId}:${clientSecret}`);
+  const params = new URLSearchParams();
+  params.append('grant_type', 'client_credentials');
+
+  const response = await fetch(GLOO_TOKEN_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${basicAuth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: params.toString(),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Gloo token exchange failed ${response.status}: ${errorText}`);
+  }
+
+  const data = await response.json();
+  cachedToken = data.access_token;
+  tokenExpiresAt = Date.now() + (data.expires_in || 3600) * 1000;
+  return cachedToken;
+}
 
 const SYSTEM_INSTRUCTIONS = `You are "theWay Care Agent", an AI assistant for The Way Bridge platform that connects individuals with local churches for prayer, encouragement, and practical assistance.
 
@@ -39,11 +81,11 @@ WORKFLOW:
 Call tools in a logical sequence. Do NOT call all tools at once — wait for results before deciding next steps.
 Always provide a warm, compassionate final message to the user summarizing what was done.`;
 
-async function callGloo(input, apiKey) {
+async function callGloo(input, accessToken) {
   const response = await fetch(GLOO_ENDPOINT, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -90,10 +132,7 @@ export default async function(req) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
     }
 
-    const apiKey = secrets.get('GLOO_API_KEY')?.trim().replace(/^["']|["']$/g, '');
-    if (!apiKey) {
-      return Response.json({ error: 'GLOO_API_KEY secret is not set' }, { status: 500 });
-    }
+    const accessToken = await getAccessToken();
 
     // Create AgentRun
     const run = await base44.asServiceRole.entities.AgentRun.create({
@@ -118,7 +157,7 @@ export default async function(req) {
 
     // Agent loop
     for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
-      const glooResponse = await callGloo(input, apiKey);
+      const glooResponse = await callGloo(input, accessToken);
       const functionCalls = extractFunctionCalls(glooResponse.output || []);
 
       // Write AgentAction for each function call
