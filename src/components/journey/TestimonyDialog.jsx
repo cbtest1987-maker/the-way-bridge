@@ -18,7 +18,7 @@ export default function TestimonyDialog({ journey, open, onClose }) {
       request_id: journey.id,
       content: content.trim(),
       is_anonymous: !shareName,
-      is_published: false
+      is_published: true
     });
     setSaving(false);
     setSubmitted(true);
