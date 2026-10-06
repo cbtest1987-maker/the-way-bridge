@@ -10,7 +10,7 @@ export default async function(req) {
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
     }
-    const trimmed = message.trim().slice(0, 2000);
+    const trimmed = message.trim().replace(/"{3,}/g, '').slice(0, 2000);
 
     const followUpContext = follow_up_answers && Array.isArray(follow_up_answers) && follow_up_answers.length > 0
       ? `\n\nThe person also answered these follow-up questions:\n${follow_up_answers.map((a, i) => `Q${i + 1}: ${a.question}\nA: ${a.answer}`).join('\n')}\nIncorporate these answers into your analysis.`
