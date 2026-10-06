@@ -32,9 +32,12 @@ export default function ChurchRegister() {
   const submit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    const church = await base44.entities.Church.create({ ...form, ...caps });
-    await base44.auth.updateMe({ app_role: "church_admin", church_id: church.id });
-    await checkUserAuth();
+    try {
+      await base44.functions.invoke("registerChurch", { ...form, ...caps });
+      await checkUserAuth();
+    } catch (e) {
+      // handled silently
+    }
     setSaving(false);
     navigate("/church-dashboard");
   };
