@@ -6,11 +6,16 @@ export default async function(req) {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     // Check care_safety_reviewer from VolunteerApplication — never trust client-writable User fields
+    // Also verify the reviewer's church is verified and they have been vetted (church_approved + background check)
     let isReviewer = user.role === 'admin';
     if (!isReviewer) {
       const vaPage = await base44.asServiceRole.entities.VolunteerApplication.filter({ user_id: user.id }, { limit: 1 });
       const vaList = Array.isArray(vaPage) ? vaPage : (vaPage.items || []);
-      isReviewer = vaList[0]?.care_safety_reviewer === true;
+      const va = vaList[0];
+      if (va?.care_safety_reviewer === true && va?.church_approved === true && va?.background_check_status === 'cleared') {
+        const reviewerChurch = await base44.asServiceRole.entities.Church.get(va.church_id);
+        isReviewer = reviewerChurch?.verification_status === 'verified';
+      }
     }
     if (!isReviewer) {
       return Response.json({ error: 'Forbidden — care & safety reviewer role required' }, { status: 403 });
@@ -22,6 +27,11 @@ export default async function(req) {
     // Load the journey
     const journey = await base44.asServiceRole.entities.PrayerJourney.get(journey_id);
     if (!journey) return Response.json({ error: 'Journey not found' }, { status: 404 });
+
+    // Separation of Duties: the reviewer cannot be the original requester
+    if (journey.requester_id === user.id) {
+      return Response.json({ error: 'Cannot release your own request — Separation of Duties.' }, { status: 403 });
+    }
 
     // Only allow release for journeys that were flagged for human review (danger or open review)
     if (journey.safety_level !== 'danger') {

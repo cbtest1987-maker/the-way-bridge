@@ -8,11 +8,19 @@ export default async function(req) {
 
     const { action, church_id, target_user_id, role, capabilities } = await req.json();
     if (!church_id) return Response.json({ error: 'church_id is required' }, { status: 400 });
-    if (caller.app_role !== 'church_admin' || caller.church_id !== church_id) {
-      return Response.json({ error: 'Only the admin of this church can do this' }, { status: 403 });
-    }
 
     const svc = base44.asServiceRole;
+
+    // Verify the church exists and is verified — pending self-registered churches cannot manage volunteers
+    const church = await svc.entities.Church.get(church_id);
+    if (!church) return Response.json({ error: 'Church not found' }, { status: 404 });
+    if (church.verification_status !== 'verified') {
+      return Response.json({ error: 'Church is not verified' }, { status: 403 });
+    }
+    // Verify the caller is the church leader (email matches leader_email) or a platform admin
+    if (caller.email !== church.leader_email && caller.role !== 'admin') {
+      return Response.json({ error: 'Only the verified church leader can perform this action' }, { status: 403 });
+    }
 
     async function getOrCreateVA(userId, churchId, defaultRole) {
       const existing = await svc.entities.VolunteerApplication.filter({ user_id: userId, church_id: churchId }, { limit: 1 });
@@ -31,69 +39,58 @@ export default async function(req) {
     }
 
     if (action === 'listMembers') {
-      const members = await base44.asServiceRole.entities.User.filter({ church_id });
-      const safeMembers = members.map((m) => ({
-        id: m.id,
-        full_name: m.full_name,
-        email: m.email,
-        app_role: m.app_role,
-        service_roles: m.service_roles || [],
-        volunteer_status: m.volunteer_status,
-        background_check_status: m.background_check_status || 'none',
-        church_approved: m.church_approved || false,
-        care_safety_reviewer: m.care_safety_reviewer || false,
-        volunteer_capabilities: m.volunteer_capabilities || [],
-        is_default_prayer_warrior: m.is_default_prayer_warrior || false
+      const apps = await svc.entities.VolunteerApplication.filter({ church_id }, { sort: '-created_date', limit: 100 });
+      const appList = Array.isArray(apps) ? apps : (apps.items || []);
+      const userIds = appList.map(a => a.user_id);
+      const users = await Promise.all(userIds.map(id => svc.entities.User.get(id)));
+      const safeMembers = appList.map((va, i) => ({
+        id: va.user_id,
+        full_name: users[i]?.full_name || 'Unknown',
+        email: users[i]?.email || '',
+        service_roles: va.role ? [va.role] : [],
+        background_check_status: va.background_check_status || 'none',
+        church_approved: va.church_approved || false,
+        care_safety_reviewer: va.care_safety_reviewer || false,
+        volunteer_capabilities: va.capabilities || [],
+        is_default_prayer_warrior: va.is_default_prayer_warrior || false
       }));
       return Response.json({ members: safeMembers });
     }
 
     if (action === 'approveServiceRole') {
       if (!target_user_id) return Response.json({ error: 'target_user_id is required' }, { status: 400 });
-      const target = await base44.asServiceRole.entities.User.get(target_user_id);
-      if (!target || target.church_id !== church_id) {
-        return Response.json({ error: 'User not found in this church' }, { status: 404 });
-      }
-      await base44.asServiceRole.entities.User.update(target_user_id, { church_approved: true });
       const va = await getOrCreateVA(target_user_id, church_id, role);
+      // church_id is admin-managed — only written to User when the church leader approves
+      await svc.entities.User.update(target_user_id, { church_approved: true, church_id });
       await svc.entities.VolunteerApplication.update(va.id, { church_approved: true, status: 'approved' });
       return Response.json({ success: true });
     }
 
     if (action === 'rejectServiceRole') {
       if (!target_user_id) return Response.json({ error: 'target_user_id is required' }, { status: 400 });
-      const target = await base44.asServiceRole.entities.User.get(target_user_id);
-      if (!target || target.church_id !== church_id) {
-        return Response.json({ error: 'User not found in this church' }, { status: 404 });
-      }
-      await base44.asServiceRole.entities.User.update(target_user_id, { church_approved: false, service_roles: [] });
       const va = await getOrCreateVA(target_user_id, church_id);
+      await svc.entities.User.update(target_user_id, { church_approved: false, service_roles: [] });
       await svc.entities.VolunteerApplication.update(va.id, { church_approved: false, status: 'rejected' });
       return Response.json({ success: true });
     }
 
     if (action === 'clearBackgroundCheck' || action === 'failBackgroundCheck') {
       if (!target_user_id) return Response.json({ error: 'target_user_id is required' }, { status: 400 });
-      const target = await base44.asServiceRole.entities.User.get(target_user_id);
-      if (!target || target.church_id !== church_id) {
-        return Response.json({ error: 'User not found in this church' }, { status: 404 });
-      }
-      const newStatus = action === 'clearBackgroundCheck' ? 'cleared' : 'failed';
-      await base44.asServiceRole.entities.User.update(target_user_id, { background_check_status: newStatus });
       const va = await getOrCreateVA(target_user_id, church_id);
+      const newStatus = action === 'clearBackgroundCheck' ? 'cleared' : 'failed';
+      await svc.entities.User.update(target_user_id, { background_check_status: newStatus });
       await svc.entities.VolunteerApplication.update(va.id, { background_check_status: newStatus });
       return Response.json({ success: true });
     }
 
     if (action === 'assignCareSafetyReviewer') {
       if (!target_user_id) return Response.json({ error: 'target_user_id is required' }, { status: 400 });
-      const target = await base44.asServiceRole.entities.User.get(target_user_id);
-      if (!target || target.church_id !== church_id) {
-        return Response.json({ error: 'User not found in this church' }, { status: 404 });
+      if (target_user_id === caller.id) {
+        return Response.json({ error: 'Cannot assign Care & Safety Reviewer to yourself' }, { status: 403 });
       }
-      const current = target.care_safety_reviewer || false;
-      await base44.asServiceRole.entities.User.update(target_user_id, { care_safety_reviewer: !current });
       const va = await getOrCreateVA(target_user_id, church_id);
+      const current = va.care_safety_reviewer || false;
+      await svc.entities.User.update(target_user_id, { care_safety_reviewer: !current });
       await svc.entities.VolunteerApplication.update(va.id, { care_safety_reviewer: !current });
       return Response.json({ success: true, care_safety_reviewer: !current });
     }
@@ -101,12 +98,9 @@ export default async function(req) {
     // Legacy compat
     if (action === 'approveVolunteer' || action === 'rejectVolunteer') {
       if (!target_user_id) return Response.json({ error: 'target_user_id is required' }, { status: 400 });
-      const target = await base44.asServiceRole.entities.User.get(target_user_id);
-      if (!target || target.church_id !== church_id) {
-        return Response.json({ error: 'User not found in this church' }, { status: 404 });
-      }
+      const va = await getOrCreateVA(target_user_id, church_id);
       const newStatus = action === 'approveVolunteer' ? 'approved' : 'none';
-      await base44.asServiceRole.entities.User.update(target_user_id, { volunteer_status: newStatus });
+      await svc.entities.User.update(target_user_id, { volunteer_status: newStatus });
       return Response.json({ success: true });
     }
 

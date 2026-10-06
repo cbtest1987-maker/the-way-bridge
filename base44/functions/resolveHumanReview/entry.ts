@@ -9,11 +9,16 @@ export default async function(req) {
     const svc = base44.asServiceRole;
 
     // Check care_safety_reviewer from VolunteerApplication — never trust client-writable User fields
+    // Also verify the reviewer's church is verified and they have been vetted (church_approved + background check)
     let isReviewer = user.role === 'admin';
     if (!isReviewer) {
       const vaPage = await svc.entities.VolunteerApplication.filter({ user_id: user.id }, { limit: 1 });
       const vaList = Array.isArray(vaPage) ? vaPage : (vaPage.items || []);
-      isReviewer = vaList[0]?.care_safety_reviewer === true;
+      const va = vaList[0];
+      if (va?.care_safety_reviewer === true && va?.church_approved === true && va?.background_check_status === 'cleared') {
+        const reviewerChurch = await svc.entities.Church.get(va.church_id);
+        isReviewer = reviewerChurch?.verification_status === 'verified';
+      }
     }
     if (!isReviewer) {
       return Response.json({ error: 'You need Care & Safety Reviewer permission to resolve reviews.' }, { status: 403 });

@@ -68,8 +68,9 @@ export default async function(req) {
     }
 
     // Also update non-sensitive User fields for UI display (these are not security-critical)
+    // NOTE: church_id is NOT written here — it is admin-managed and only set by churchTeam
+    // when a verified church leader approves the volunteer application.
     await svc.entities.User.update(user.id, {
-      church_id,
       service_roles: [role],
       volunteer_capabilities: validCaps,
     });

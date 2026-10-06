@@ -42,10 +42,17 @@ export default async function(req) {
       return Response.json({ error: 'Cannot accept a task for your own request — Separation of Duties.' }, { status: 403 });
     }
 
-    await svc.entities.CareTask.update(task_id, {
-      status: 'accepted',
-      assigned_volunteer_id: user.id,
-    });
+    // Atomic compare-and-set — only succeeds if status is still 'open' (prevents race condition)
+    await svc.entities.CareTask.updateMany(
+      { id: task_id, status: 'open' },
+      { $set: { status: 'accepted', assigned_volunteer_id: user.id } }
+    );
+
+    // Verify we won the race
+    const updated = await svc.entities.CareTask.get(task_id);
+    if (!updated || updated.assigned_volunteer_id !== user.id) {
+      return Response.json({ error: 'This task has already been accepted by another volunteer.', current_status: updated?.status }, { status: 409 });
+    }
 
     return Response.json({ success: true, task_id, status: 'accepted' });
   } catch (error) {
