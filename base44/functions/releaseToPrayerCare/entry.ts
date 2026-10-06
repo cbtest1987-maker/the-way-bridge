@@ -5,7 +5,14 @@ export default async function(req) {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'admin' && !user.care_safety_reviewer) {
+    // Check care_safety_reviewer from VolunteerApplication — never trust client-writable User fields
+    let isReviewer = user.role === 'admin';
+    if (!isReviewer) {
+      const vaPage = await base44.asServiceRole.entities.VolunteerApplication.filter({ user_id: user.id }, { limit: 1 });
+      const vaList = Array.isArray(vaPage) ? vaPage : (vaPage.items || []);
+      isReviewer = vaList[0]?.care_safety_reviewer === true;
+    }
+    if (!isReviewer) {
       return Response.json({ error: 'Forbidden — care & safety reviewer role required' }, { status: 403 });
     }
 

@@ -12,6 +12,24 @@ export default async function(req) {
       return Response.json({ error: 'Only the admin of this church can do this' }, { status: 403 });
     }
 
+    const svc = base44.asServiceRole;
+
+    async function getOrCreateVA(userId, churchId, defaultRole) {
+      const existing = await svc.entities.VolunteerApplication.filter({ user_id: userId, church_id: churchId }, { limit: 1 });
+      const list = Array.isArray(existing) ? existing : (existing.items || []);
+      if (list.length > 0) return list[0];
+      return await svc.entities.VolunteerApplication.create({
+        user_id: userId,
+        church_id: churchId,
+        role: defaultRole || 'prayer_warrior',
+        status: 'pending',
+        church_approved: false,
+        background_check_status: 'none',
+        care_safety_reviewer: false,
+        is_default_prayer_warrior: false,
+      });
+    }
+
     if (action === 'listMembers') {
       const members = await base44.asServiceRole.entities.User.filter({ church_id });
       const safeMembers = members.map((m) => ({
@@ -37,6 +55,8 @@ export default async function(req) {
         return Response.json({ error: 'User not found in this church' }, { status: 404 });
       }
       await base44.asServiceRole.entities.User.update(target_user_id, { church_approved: true });
+      const va = await getOrCreateVA(target_user_id, church_id, role);
+      await svc.entities.VolunteerApplication.update(va.id, { church_approved: true, status: 'approved' });
       return Response.json({ success: true });
     }
 
@@ -47,6 +67,8 @@ export default async function(req) {
         return Response.json({ error: 'User not found in this church' }, { status: 404 });
       }
       await base44.asServiceRole.entities.User.update(target_user_id, { church_approved: false, service_roles: [] });
+      const va = await getOrCreateVA(target_user_id, church_id);
+      await svc.entities.VolunteerApplication.update(va.id, { church_approved: false, status: 'rejected' });
       return Response.json({ success: true });
     }
 
@@ -58,6 +80,8 @@ export default async function(req) {
       }
       const newStatus = action === 'clearBackgroundCheck' ? 'cleared' : 'failed';
       await base44.asServiceRole.entities.User.update(target_user_id, { background_check_status: newStatus });
+      const va = await getOrCreateVA(target_user_id, church_id);
+      await svc.entities.VolunteerApplication.update(va.id, { background_check_status: newStatus });
       return Response.json({ success: true });
     }
 
@@ -69,6 +93,8 @@ export default async function(req) {
       }
       const current = target.care_safety_reviewer || false;
       await base44.asServiceRole.entities.User.update(target_user_id, { care_safety_reviewer: !current });
+      const va = await getOrCreateVA(target_user_id, church_id);
+      await svc.entities.VolunteerApplication.update(va.id, { care_safety_reviewer: !current });
       return Response.json({ success: true, care_safety_reviewer: !current });
     }
 

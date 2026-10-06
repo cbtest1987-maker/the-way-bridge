@@ -6,7 +6,15 @@ export default async function(req) {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const isReviewer = user.role === 'admin' || user.care_safety_reviewer;
+    const svc = base44.asServiceRole;
+
+    // Check care_safety_reviewer from VolunteerApplication — never trust client-writable User fields
+    let isReviewer = user.role === 'admin';
+    if (!isReviewer) {
+      const vaPage = await svc.entities.VolunteerApplication.filter({ user_id: user.id }, { limit: 1 });
+      const vaList = Array.isArray(vaPage) ? vaPage : (vaPage.items || []);
+      isReviewer = vaList[0]?.care_safety_reviewer === true;
+    }
     if (!isReviewer) {
       return Response.json({ error: 'You need Care & Safety Reviewer permission to resolve reviews.' }, { status: 403 });
     }
@@ -17,8 +25,6 @@ export default async function(req) {
     if (!['return_to_normal', 'care_handling', 'escalate', 'close_inappropriate'].includes(resolution)) {
       return Response.json({ error: 'Invalid resolution' }, { status: 400 });
     }
-
-    const svc = base44.asServiceRole;
 
     const review = await svc.entities.HumanReview.get(review_id);
     if (!review) return Response.json({ error: 'Review not found' }, { status: 404 });

@@ -1,0 +1,96 @@
+{
+  "name": "VolunteerApplication",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "The applicant's user ID"
+    },
+    "church_id": {
+      "type": "string",
+      "description": "The church the applicant wants to join"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "prayer_warrior",
+        "care_volunteer",
+        "church_connect_coordinator"
+      ],
+      "description": "The requested service role"
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Volunteer capabilities (transportation, food, etc.)"
+    },
+    "church_approved": {
+      "type": "boolean",
+      "default": false,
+      "description": "Church admin approval \u2014 only admins can set this"
+    },
+    "background_check_status": {
+      "type": "string",
+      "enum": [
+        "none",
+        "pending",
+        "cleared",
+        "failed"
+      ],
+      "default": "none"
+    },
+    "care_safety_reviewer": {
+      "type": "boolean",
+      "default": false,
+      "description": "Privileged permission assigned by Church Admin \u2014 only admins can set this"
+    },
+    "is_default_prayer_warrior": {
+      "type": "boolean",
+      "default": false,
+      "description": "Designated default prayer warrior for timeout reassignment \u2014 only admins can set this"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "user_id",
+    "church_id",
+    "role"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

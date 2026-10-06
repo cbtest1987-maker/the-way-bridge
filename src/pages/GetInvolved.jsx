@@ -37,15 +37,16 @@ export default function GetInvolved() {
     }
     if (!selected || !selectedRole) return;
     setSaving(true);
-    const update = {
-      church_id: selected,
-      service_roles: [selectedRole],
-      church_approved: false,
-      background_check_status: selectedRole === "care_volunteer" ? "pending" : "none",
-      volunteer_capabilities: selectedRole === "care_volunteer" ? caps : [],
-    };
-    await base44.auth.updateMe(update);
-    await checkUserAuth();
+    try {
+      await base44.functions.invoke("submitVolunteerApplication", {
+        church_id: selected,
+        role: selectedRole,
+        capabilities: selectedRole === "care_volunteer" ? caps : [],
+      });
+      await checkUserAuth();
+    } catch (e) {
+      // handled silently
+    }
     setSaving(false);
   };
 

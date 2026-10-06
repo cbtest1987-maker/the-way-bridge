@@ -5,28 +5,27 @@ export default async function(req) {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!user.church_id) return Response.json({ error: 'You must belong to a verified church.' }, { status: 403 });
-
     const body = await req.json();
     const { task_id } = body;
     if (!task_id) return Response.json({ error: 'Missing task_id' }, { status: 400 });
 
     const svc = base44.asServiceRole;
 
-    // Enforce volunteer eligibility server-side — never trust client-side checks
-    const fullUser = await svc.entities.User.get(user.id);
-    const serviceRoles = Array.isArray(fullUser?.service_roles) ? fullUser.service_roles : [];
-    const isCareVolunteer = serviceRoles.includes('care_volunteer') || fullUser?.app_role === 'volunteer';
-    if (!isCareVolunteer) {
+    // Re-verify eligibility from VolunteerApplication — never trust client-writable User fields
+    const vaPage = await svc.entities.VolunteerApplication.filter({ user_id: user.id }, { limit: 1 });
+    const vaList = Array.isArray(vaPage) ? vaPage : (vaPage.items || []);
+    const va = vaList[0];
+    if (!va) return Response.json({ error: 'No volunteer application found. Please apply through Get Involved.' }, { status: 403 });
+    if (va.role !== 'care_volunteer') {
       return Response.json({ error: 'You are not registered as a care volunteer.' }, { status: 403 });
     }
-    if (fullUser?.background_check_status !== 'cleared') {
+    if (va.background_check_status !== 'cleared') {
       return Response.json({ error: 'A cleared background check is required to accept care tasks.' }, { status: 403 });
     }
-    if (!fullUser?.church_approved) {
+    if (!va.church_approved) {
       return Response.json({ error: 'You must be approved by your church to accept care tasks.' }, { status: 403 });
     }
-    const church = await svc.entities.Church.get(user.church_id);
+    const church = await svc.entities.Church.get(va.church_id);
     if (!church || church.verification_status !== 'verified') {
       return Response.json({ error: 'Your church must be verified to accept care tasks.' }, { status: 403 });
     }
