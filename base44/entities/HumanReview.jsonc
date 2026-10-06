@@ -56,7 +56,20 @@
         "role": "admin"
       }
     },
-    "read": null,
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.care_safety_reviewer": true
+          }
+        }
+      ]
+    },
     "update": null,
     "delete": {
       "user_condition": {
