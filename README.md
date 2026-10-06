@@ -1,62 +1,70 @@
-# Base44 Project
+# theWay Bridge AI
 
-Use this repository to run and edit the app locally, then publish changes back through Base44.
+## From a Prayer Request to a Movement of Care
 
-Any change pushed to the repo will also be reflected in the Base44 Builder.
+**Prayer • Care • Connection • Community**
 
-## Prerequisites
+theWay Bridge AI is an agentic AI platform that helps connect people seeking prayer and practical support with trusted local churches, Prayer Warriors, Care Volunteers, and human safety reviewers.
 
-1. Clone the repository using the project's Git URL.
-2. Navigate to the project directory.
-3. Install dependencies: `npm install`.
-4. Install the Base44 CLI: `npm install -g base44@latest`.
-5. Install [Deno](https://docs.deno.com/runtime/getting_started/installation/) — the local Base44 backend runs on it.
+A person may simply say:
 
-Run `base44 --help` (or see the [CLI reference](https://docs.base44.com/developers/references/cli/commands/introduction)) for the full command surface.
+> "I'm a new international student. I don't know anyone here. Please pray for me. I don't have transportation and I'm looking for a church community."
 
-## Run Locally
+Instead of treating this as a single prayer request, the agent identifies multiple needs, coordinates the appropriate workflows, maintains follow-up, and knows when AI must stop and a human must take over.
 
-Three commands, from the project root:
+**AI maintains continuity. Humans provide care. The church carries responsibility.**
 
-```bash
-base44 login   # one-time per machine
-base44 link    # one-time per clone
-base44 dev     # local backend + frontend together
-```
+---
 
-Open the frontend URL that `base44 dev` prints (typically `http://localhost:5173`).
+## Gloo AI Hackathon 2026
 
-Notes:
+**Track:** Agents of Flourishing
 
-- **Every fresh clone needs `base44 link`.** It writes `base44/.app.jsonc` (the app-id pointer), which is deliberately gitignored. Your app id is in the Builder URL (`app.base44.com/apps/<id>/...`); `base44 link --help` shows the non-interactive flags.
-- **`base44 dev` runs the frontend for you** (via `site.serveCommand` in this repo's `base44/config.jsonc`) — never run `npm run dev` yourself: alone it serves a UI with no backend behind it (`[base44] Proxy not enabled`, every `/api` call fails), and alongside `base44 dev` the second Vite silently takes the next port and you end up looking at the wrong one.
-- **The app must be published at least once for the UI to load under `base44 dev`.** The frontend boots by fetching app settings from the hosted app; before the first publish that fails and every page redirects to login. The local API works regardless.
-- Entities, functions, and auth run locally — entity data is **in-memory only**, wiped when `base44 dev` restarts. Everything else (Core integrations, OAuth login) is forwarded to your deployed app. Full breakdown: [Local development overview](https://docs.base44.com/developers/backend/overview/local-dev/local-development-overview).
+**AI Platform:** Gloo AI Studio — Guarded Inference  
+**Model:** `gloo-anthropic-claude-sonnet-4.6`  
+**Application Platform:** Base44  
+**Agent Controller:** TypeScript  
+**Validated Build:** `b7b1668`
 
-## Frontend Only, Hosted Backend
+---
 
-To work on just the frontend against your app's live hosted backend:
+## Why We Built It
 
-```bash
-base44 dev --remote
-```
+People often face difficult seasons — moving to a new place, loneliness, grief, health concerns, practical needs, or disconnection from church.
 
-⚠️ In this mode writes go to your app's **production data** — plain `base44 dev` keeps everything local.
+Many may desire prayer and community but are not ready or comfortable walking directly into a church.
 
-## Publish Your Changes
+At the same time, churches often want to help but lack a coordinated way to understand a person's needs, mobilize the right people, maintain follow-up, and safely escalate situations requiring human judgment.
 
-After pushing your changes to git, open the Base44 dashboard and publish the app:
+theWay Bridge AI creates a bridge between those two sides.
 
-```bash
-base44 dashboard open
-```
+---
 
-This repo syncs to Base44 through git, so publish from the dashboard rather than `base44 deploy` — a CLI deploy ships your local tree directly, bypassing the sync, and the deployed state silently diverges from the repo.
+## Architecture
 
-## Docs & Support
-
-GitHub integration: [https://docs.base44.com/developers/app-code/local-development/github](https://docs.base44.com/developers/app-code/local-development/github)
-
-Local development: [https://docs.base44.com/developers/backend/overview/local-dev/local-development-overview](https://docs.base44.com/developers/backend/overview/local-dev/local-development-overview)
-
-Support: [https://app.base44.com/support](https://app.base44.com/support)
+```text
+                    PERSON
+                       │
+                       ▼
+                Base44 React UI
+                       │
+                       ▼
+              theWayCareAgent
+             TypeScript Controller
+                       │
+                       ▼
+              Gloo AI Studio
+              Guarded Inference
+                       │
+              Reason → Select Tool
+                       │
+                       ▼
+          Deterministic TypeScript Tools
+                       │
+                       ▼
+               Base44 Entities
+                       │
+          ┌────────────┼────────────┐
+          ▼            ▼            ▼
+       Prayer        Care       Human Review
+       Warrior     Volunteer      / Church
