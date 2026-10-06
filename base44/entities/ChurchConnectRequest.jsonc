@@ -62,5 +62,45 @@
     "journey_id",
     "requesting_church_id",
     "need_type"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.requesting_church_id": "{{user.data.church_id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.requesting_church_id": "{{user.data.church_id}}"
+        },
+        {
+          "data.responding_church_id": "{{user.data.church_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.requesting_church_id": "{{user.data.church_id}}"
+        },
+        {
+          "data.responding_church_id": "{{user.data.church_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
 }
