@@ -15,6 +15,24 @@ export default async function(req) {
 
     const svc = base44.asServiceRole;
 
+    // Enforce volunteer eligibility: load the caller with service role to read protected fields
+    const fullUser = await svc.entities.User.get(user.id);
+    const serviceRoles = Array.isArray(fullUser?.service_roles) ? fullUser.service_roles : [];
+    const isPrayerWarrior = serviceRoles.includes('prayer_warrior') || fullUser?.is_default_prayer_warrior;
+    if (!isPrayerWarrior) {
+      return Response.json({ error: 'You are not registered as a prayer warrior.' }, { status: 403 });
+    }
+    if (fullUser?.background_check_status !== 'cleared') {
+      return Response.json({ error: 'A cleared background check is required to accept prayer assignments.' }, { status: 403 });
+    }
+    if (!fullUser?.church_approved) {
+      return Response.json({ error: 'You must be approved by your church to accept prayer assignments.' }, { status: 403 });
+    }
+    const church = await svc.entities.Church.get(user.church_id);
+    if (!church || church.verification_status !== 'verified') {
+      return Response.json({ error: 'Your church must be verified to accept prayer assignments.' }, { status: 403 });
+    }
+
     // Atomically fetch the current assignment to check its status
     const assignment = await svc.entities.PrayerAssignment.get(assignmentId);
     if (!assignment) return Response.json({ error: 'Assignment not found' }, { status: 404 });

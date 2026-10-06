@@ -149,7 +149,6 @@ export const TOOL_SCHEMAS = [
         type: 'object',
         properties: {
           journey_id: { type: 'string', description: 'The ID of the PrayerJourney' },
-          requesting_church_id: { type: 'string', description: 'The church requesting help (omit to use the user\'s church)' },
           responding_church_id: { type: 'string', description: 'The church being asked to help (omit if no match found)' },
           need_type: { type: 'string', enum: ['space', 'building', 'church_planting', 'fundraising', 'disaster', 'resources', 'ministry_resource'], description: 'The type of support needed' },
           resource_name: { type: 'string', description: 'The specific ministry resource requested (e.g. Communion Tray). Include for ministry_resource need type.' },
@@ -191,15 +190,41 @@ export const TOOL_SCHEMAS = [
   },
 ];
 
+async function screenSafetyLevel(svc, message) {
+  const result = await svc.integrations.Core.InvokeLLM({
+    prompt: `You are a safety classifier for a prayer/care platform. Classify the safety level of the following message as one of:
+- "normal": an ordinary prayer or care request with no indication of danger.
+- "sensitive": legitimate but delicate (grief, abuse disclosure, mental health, relationship crisis).
+- "danger": indicates potential immediate danger to self or others (suicidal intent, active abuse, threats of violence, crisis).
+
+Return only the structured result.
+
+Message:
+"""${message}"""`,
+    response_json_schema: {
+      type: 'object',
+      properties: {
+        safety_level: { type: 'string', enum: ['normal', 'sensitive', 'danger'] },
+        reason: { type: 'string' },
+      },
+      required: ['safety_level', 'reason'],
+    },
+  });
+  const level = result?.safety_level;
+  return ['normal', 'sensitive', 'danger'].includes(level) ? level : 'sensitive';
+}
+
 export async function dispatchTool(toolName, args, ctx) {
   const { base44, user, runId } = ctx;
   const svc = base44.asServiceRole;
 
   switch (toolName) {
     case 'create_prayer_journey': {
+      // Deterministic safety screening — never trust the model's self-reported safety_level
+      const screenedLevel = await screenSafetyLevel(svc, args.message);
       const journey = await svc.entities.PrayerJourney.create({
         message: args.message,
-        safety_level: args.safety_level || 'normal',
+        safety_level: screenedLevel,
         is_anonymous: args.is_anonymous || false,
         display_name: args.display_name || user.full_name,
         contact_email: args.contact_email || user.email,
@@ -207,10 +232,16 @@ export async function dispatchTool(toolName, args, ctx) {
         status: 'open',
         requester_id: user.id,
       });
-      return { journey_id: journey.id, status: journey.status, safety_level: journey.safety_level };
+      return { journey_id: journey.id, status: journey.status, safety_level: journey.safety_level, screening_note: 'Safety level was deterministically re-screened server-side.' };
     }
 
     case 'create_prayer_assignment': {
+      // Re-check journey safety — never assign prayer warriors to danger cases
+      const journey = await svc.entities.PrayerJourney.get(args.journey_id);
+      if (!journey) return { error: 'Journey not found' };
+      if (journey.safety_level === 'danger') {
+        return { error: 'Cannot create prayer assignment for a danger-flagged journey. Escalate to human review instead.' };
+      }
       const timeoutMinutes = parseInt(secrets.get('PRAYER_ASSIGNMENT_TIMEOUT_MINUTES') || '720', 10);
       const dueAt = new Date(Date.now() + timeoutMinutes * 60 * 1000).toISOString();
       const assignment = await svc.entities.PrayerAssignment.create({
@@ -229,6 +260,12 @@ export async function dispatchTool(toolName, args, ctx) {
     }
 
     case 'create_care_task': {
+      // Re-check journey safety — never create care tasks for danger cases
+      const journey = await svc.entities.PrayerJourney.get(args.journey_id);
+      if (!journey) return { error: 'Journey not found' };
+      if (journey.safety_level === 'danger') {
+        return { error: 'Cannot create care tasks for a danger-flagged journey. Escalate to human review instead.' };
+      }
       const task = await svc.entities.CareTask.create({
         journey_id: args.journey_id,
         type: args.type,
@@ -305,9 +342,10 @@ export async function dispatchTool(toolName, args, ctx) {
 
     case 'create_church_connect_request': {
       const hasRespondingChurch = !!args.responding_church_id;
-      const requestingChurchId = args.requesting_church_id || user.church_id;
+      // Always derive requesting church from the authenticated user — never trust model args
+      const requestingChurchId = user.church_id;
       if (!requestingChurchId) {
-        return { error: 'Requesting church ID is required (user has no church_id)' };
+        return { error: 'You must belong to a church to create a connection request' };
       }
       const ccRequest = await svc.entities.ChurchConnectRequest.create({
         journey_id: args.journey_id,

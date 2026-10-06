@@ -5,6 +5,9 @@ export default async function(req) {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.role !== 'admin' && !user.care_safety_reviewer) {
+      return Response.json({ error: 'Forbidden — care & safety reviewer role required' }, { status: 403 });
+    }
 
     const { journey_id, reviewer_notes } = await req.json();
     if (!journey_id) return Response.json({ error: 'journey_id is required' }, { status: 400 });
@@ -12,6 +15,15 @@ export default async function(req) {
     // Load the journey
     const journey = await base44.asServiceRole.entities.PrayerJourney.get(journey_id);
     if (!journey) return Response.json({ error: 'Journey not found' }, { status: 404 });
+
+    // Only allow release for journeys that were flagged for human review (danger or open review)
+    if (journey.safety_level !== 'danger') {
+      return Response.json({ error: 'This journey is not flagged for safety review release' }, { status: 400 });
+    }
+    const openReviews = await base44.asServiceRole.entities.HumanReview.filter({ journey_id, status: 'open' });
+    if (openReviews.length === 0) {
+      return Response.json({ error: 'No open safety review exists for this journey' }, { status: 400 });
+    }
 
     // Refine the AI summary using the reviewer's notes
     const originalText = journey.ai_summary || journey.message;
