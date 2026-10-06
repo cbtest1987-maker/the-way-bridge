@@ -33,18 +33,6 @@ export default async function(req) {
       return Response.json({ error: 'Your church must be verified to accept prayer assignments.' }, { status: 403 });
     }
 
-    // Atomically fetch the current assignment to check its status
-    const assignment = await svc.entities.PrayerAssignment.get(assignmentId);
-    if (!assignment) return Response.json({ error: 'Assignment not found' }, { status: 404 });
-
-    // LOCK CHECK: only "open" assignments can be accepted
-    if (assignment.status !== 'open') {
-      return Response.json({
-        error: 'This prayer request has already been accepted by another warrior.',
-        current_status: assignment.status,
-      }, { status: 409 });
-    }
-
     // Check warrior doesn't already have an active accepted assignment
     const existing = await svc.entities.PrayerAssignment.filter({
       assigned_warrior_id: user.id,
@@ -62,14 +50,28 @@ export default async function(req) {
     const now = new Date();
     const dueAt = new Date(now.getTime() + timeoutMinutes * 60 * 1000).toISOString();
 
-    // Update assignment — the status check above is our optimistic lock
-    await svc.entities.PrayerAssignment.update(assignmentId, {
+    // Conditional update — only succeeds if status is still 'open' (atomic compare-and-set)
+    const updateSet = {
       status: 'accepted',
       assigned_warrior_id: user.id,
       accepted_at: now.toISOString(),
       due_at: dueAt,
-      warrior_note: note || undefined,
-    });
+    };
+    if (note) updateSet.warrior_note = note;
+    await svc.entities.PrayerAssignment.updateMany(
+      { id: assignmentId, status: 'open' },
+      { $set: updateSet }
+    );
+
+    // Verify we won the race
+    const assignment = await svc.entities.PrayerAssignment.get(assignmentId);
+    if (!assignment) return Response.json({ error: 'Assignment not found' }, { status: 404 });
+    if (assignment.assigned_warrior_id !== user.id) {
+      return Response.json({
+        error: 'This prayer request has already been accepted by another warrior.',
+        current_status: assignment.status,
+      }, { status: 409 });
+    }
 
     return Response.json({
       success: true,

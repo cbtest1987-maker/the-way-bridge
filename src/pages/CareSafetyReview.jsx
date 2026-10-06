@@ -51,13 +51,15 @@ export default function CareSafetyReview() {
 
   const resolve = async (review, resolution) => {
     setSaving(review.id);
-    await base44.entities.HumanReview.update(review.id, {
-      status: "resolved",
-      reviewer_id: user?.id,
-      reviewer_notes: notes[review.id] || "",
-      resolution,
-      automation_paused: false
-    });
+    try {
+      await base44.functions.invoke("resolveHumanReview", {
+        review_id: review.id,
+        resolution,
+        reviewer_notes: notes[review.id] || "",
+      });
+    } catch (e) {
+      // handled silently
+    }
     setSaving(null);
     load();
   };

@@ -214,6 +214,13 @@ Message:
   return ['normal', 'sensitive', 'danger'].includes(level) ? level : 'sensitive';
 }
 
+async function verifyJourneyOwnership(svc, journeyId, userId) {
+  const journey = await svc.entities.PrayerJourney.get(journeyId);
+  if (!journey) return { error: 'Journey not found' };
+  if (journey.requester_id !== userId) return { error: 'Journey does not belong to the calling user' };
+  return { journey };
+}
+
 export async function dispatchTool(toolName, args, ctx) {
   const { base44, user, runId } = ctx;
   const svc = base44.asServiceRole;
@@ -236,10 +243,10 @@ export async function dispatchTool(toolName, args, ctx) {
     }
 
     case 'create_prayer_assignment': {
-      // Re-check journey safety — never assign prayer warriors to danger cases
-      const journey = await svc.entities.PrayerJourney.get(args.journey_id);
-      if (!journey) return { error: 'Journey not found' };
-      if (journey.safety_level === 'danger') {
+      // Verify ownership + re-check journey safety — never assign prayer warriors to danger cases
+      const { journey: j1, error: e1 } = await verifyJourneyOwnership(svc, args.journey_id, user.id);
+      if (e1) return { error: e1 };
+      if (j1.safety_level === 'danger') {
         return { error: 'Cannot create prayer assignment for a danger-flagged journey. Escalate to human review instead.' };
       }
       const timeoutMinutes = parseInt(secrets.get('PRAYER_ASSIGNMENT_TIMEOUT_MINUTES') || '720', 10);
@@ -260,10 +267,10 @@ export async function dispatchTool(toolName, args, ctx) {
     }
 
     case 'create_care_task': {
-      // Re-check journey safety — never create care tasks for danger cases
-      const journey = await svc.entities.PrayerJourney.get(args.journey_id);
-      if (!journey) return { error: 'Journey not found' };
-      if (journey.safety_level === 'danger') {
+      // Verify ownership + re-check journey safety — never create care tasks for danger cases
+      const { journey: j2, error: e2 } = await verifyJourneyOwnership(svc, args.journey_id, user.id);
+      if (e2) return { error: e2 };
+      if (j2.safety_level === 'danger') {
         return { error: 'Cannot create care tasks for a danger-flagged journey. Escalate to human review instead.' };
       }
       const task = await svc.entities.CareTask.create({
@@ -314,6 +321,9 @@ export async function dispatchTool(toolName, args, ctx) {
     }
 
     case 'create_care_safety_review': {
+      // Verify ownership — never create safety reviews on another user's journey
+      const { error: e3 } = await verifyJourneyOwnership(svc, args.journey_id, user.id);
+      if (e3) return { error: e3 };
       const review = await svc.entities.HumanReview.create({
         journey_id: args.journey_id,
         reason: args.reason,
@@ -341,6 +351,9 @@ export async function dispatchTool(toolName, args, ctx) {
     }
 
     case 'create_church_connect_request': {
+      // Verify ownership — never attach connect requests to another user's journey
+      const { error: e4 } = await verifyJourneyOwnership(svc, args.journey_id, user.id);
+      if (e4) return { error: e4 };
       const hasRespondingChurch = !!args.responding_church_id;
       // Always derive requesting church from the authenticated user — never trust model args
       const requestingChurchId = user.church_id;

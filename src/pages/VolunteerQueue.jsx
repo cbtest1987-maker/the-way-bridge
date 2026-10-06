@@ -36,10 +36,7 @@ export default function VolunteerQueue() {
   }, [load]);
 
   const iCanHelp = async (task) => {
-    await base44.entities.CareTask.update(task.id, {
-      status: "accepted",
-      assigned_volunteer_id: user.id,
-    });
+    await base44.functions.invoke("acceptCareTask", { task_id: task.id });
     load();
   };
 
