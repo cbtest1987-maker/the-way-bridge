@@ -5,8 +5,9 @@ import { Link } from "react-router-dom";
 import StatusBadge from "@/components/shared/StatusBadge";
 import {
   ShieldCheck, Church, Users, HandHeart, HeartHandshake,
-  ScrollText, ShieldAlert, AlertTriangle, ArrowRight, Loader2
+  ScrollText, ShieldAlert, AlertTriangle, ArrowRight, Loader2, Trash2
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function SuperAdminDashboard() {
   const { user } = useAuth();
@@ -14,6 +15,7 @@ export default function SuperAdminDashboard() {
   const [recentJourneys, setRecentJourneys] = useState([]);
   const [recentReviews, setRecentReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [clearing, setClearing] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -56,6 +58,36 @@ export default function SuperAdminDashboard() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const clearEntity = async (entityName, label) => {
+    if (!window.confirm(`Delete ALL ${label} records? This cannot be undone.`)) return;
+    setClearing(entityName);
+    try {
+      await base44.entities[entityName].deleteMany({});
+      await load();
+    } catch (e) {
+      alert(`Failed to delete: ${e.message || e}`);
+    } finally {
+      setClearing(null);
+    }
+  };
+
+  const CLEARABLE_ENTITIES = [
+    { name: "PrayerJourney", label: "Prayer Journeys" },
+    { name: "PrayerRequest", label: "Prayer Requests" },
+    { name: "HumanReview", label: "Safety Reviews" },
+    { name: "CareTask", label: "Care Tasks" },
+    { name: "PrayerAssignment", label: "Prayer Assignments" },
+    { name: "Need", label: "Needs" },
+    { name: "SupportOffer", label: "Support Offers" },
+    { name: "ChurchConnectRequest", label: "Church Connect Requests" },
+    { name: "PrayerCommitment", label: "Prayer Commitments" },
+    { name: "Testimony", label: "Testimonies" },
+    { name: "ComplianceCase", label: "Compliance Cases" },
+    { name: "AgentRun", label: "Agent Runs" },
+    { name: "AgentAction", label: "Agent Actions" },
+    { name: "ChatThread", label: "Chat Threads" },
+  ];
 
   if (user?.role !== "admin") {
     return (
@@ -102,6 +134,27 @@ export default function SuperAdminDashboard() {
         <QuickLink to="/compliance" icon={AlertTriangle} title="Compliance Queue" desc="Review AI-flagged content" />
         <QuickLink to="/judge" icon={ScrollText} title="Agent Audit Trail" desc="Chronological view of Care Agent runs" />
         <QuickLink to="/church-dashboard" icon={Users} title="Church Dashboard" desc="Manage your church team and volunteers" />
+      </div>
+
+      {/* Data management */}
+      <h2 className="font-serif text-lg text-[#2B2620] mb-3">Data Management</h2>
+      <div className="bg-white rounded-2xl border border-[#EFE8DA] p-5 mb-8">
+        <p className="text-sm text-[#8A8375] mb-4">Delete all records for a given entity type. This is irreversible.</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          {CLEARABLE_ENTITIES.map((e) => (
+            <Button
+              key={e.name}
+              variant="outline"
+              size="sm"
+              disabled={clearing !== null}
+              onClick={() => clearEntity(e.name, e.label)}
+              className="text-red-600 border-red-200 hover:bg-red-50 justify-start"
+            >
+              {clearing === e.name ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              {e.label}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {/* Recent activity */}
